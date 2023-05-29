@@ -35,7 +35,7 @@ public static IHostBuilder UseCommandLine(this IHostBuilder hostBuilder, Action<
 public static IHostBuilder UseCommandLine(this IHostBuilder hostBuilder, Action<CliOptions> options, Action<CliCenter> appender);
 ```
 
-## 命令設定方式
+## 指令設定方式
 使用自訂屬性 `CommandAttribute` 設定，如：
 ```c#
 [Command("quit")]
@@ -83,7 +83,7 @@ public MethodInfo? Method { get; internal set; } = null;
 當使用正規表示式時，需指定 `IsRegular` 屬性值為 `true`、`RegularHelp` 說明該表示式的意義。
 
 ## 函示定義
-欲綁定 `CommandAttribute` 自訂屬性的函示定義格式如下：
+綁定 `CommandAttribute` 自訂屬性的函示需定義為 static 類型，支援的格式如下：
 ```C#
 static void CLI_Mathod1();
 static void CLI_Mathod2(CliCenter cli);
@@ -132,13 +132,16 @@ partial class Program
 	}
 }
 ```
-
+為加快指令尋找、比對時間，建議可使用 `RebindLinkRelationship` 方法重新建立指令的連結關係。
 
 ``` C#
 // File Name : _CLI.cs
 partial class Program
 {
 	#region CLI : Show Command Help - 2 Parameters: CliCenter, string[]
+	// 當輸入不完整的指令時，顯示的內容
+	// 輸入 "show" 時，顯示的內容為 "> 輸入 "show ?" 顯示子指令清單與說明"
+	// 輸入 "show echo" 時，顯示的內容為 "> 輸入 "show echo ?" 顯示子指令清單與說明"
 	[Command("show", "顯示內部資料。")]
 	[Command("echo", "顯示輸入的文字。", "show")]
 	static void CLI_HasSubCommand(CliCenter cli, params string[] args)
@@ -181,6 +184,7 @@ partial class Program
 	#endregion
 
 	#region CLI : show echo [String] - 1 Parameter: string[]
+	// 輸入 show echo "Test String" 時，會顯示 "> Echo: "Test String""
 	[Command(CliCenter.STRING_REGEX, "如包含空白，請用單或雙引號。", "show echo", IsRegular = true, RegularHelp = "[String]")]
 	static void CLI_Echo(params string[] args)
 	{

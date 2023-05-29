@@ -5,15 +5,15 @@
 		<Nullable>enable</Nullable>
 		<RootNamespace>CJF.CommandLine</RootNamespace>
 		<Configurations>MinRelease;Debug;Release</Configurations>
-		<AssemblyVersion>1.30.702.20526</AssemblyVersion>
-		<FileVersion>1.30.702.20526</FileVersion>
+		<AssemblyVersion>1.30.702</AssemblyVersion>
+		<FileVersion>1.30.702</FileVersion>
 		<Title>Command Line Interface for Console Hosting Application</Title>
 		<Copyright>Copyright(c) 2023 Chen Jaofeng all right reserved.</Copyright>
 		<PackageTags>CLI;Command Line;Console</PackageTags>
 		<EnforceCodeStyleInBuild>False</EnforceCodeStyleInBuild>
 		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 		<PackageId>CJF.CommandLine</PackageId>
-		<Version>1.30.702.20526</Version>
+		<Version>1.30.702</Version>
 		<Company>Chen Jaofeng</Company>
 		<Authors>Chen Jaofeng</Authors>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
@@ -35,7 +35,7 @@
 	<PropertyGroup>
 		<PackageReadmeFile>readme.md</PackageReadmeFile>
 		<Description>Command Line Interface for Console Hosting Application</Description>
-		<ApplicationIcon>icon.ico</ApplicationIcon>
+		<ApplicationIcon>Images\icon.ico</ApplicationIcon>
 		<PackageIcon>icon.png</PackageIcon>
 	</PropertyGroup>
 	<ItemGroup>
@@ -43,7 +43,13 @@
 	  <None Remove=".gitignore" />
 	</ItemGroup>
 	<ItemGroup>
-	  <Content Include="icon.ico" />
+	  <Content Include="Images\icon.ico" />
+	</ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Include="Images\icon.png">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </EmbeddedResource>
 	</ItemGroup>
 	<ItemGroup>
 	  <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
@@ -52,7 +58,7 @@
 		<None Include="readme.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 	<ItemGroup>
-	  <None Update="icon.png">
+	  <None Update="Images\icon.png">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </None>
