@@ -1,4 +1,4 @@
-﻿# 主控台指令行介面(Console Application Command Line Interface) For .Net Core
+﻿# 主控台指令行介面(Command Line Interface for Console Host Application) For .Net Core
 
 ## 使用方法：
 ```C#
