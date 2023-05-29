@@ -35,11 +35,26 @@
 	<PropertyGroup>
 		<PackageReadmeFile>readme.md</PackageReadmeFile>
 		<Description>Command Line Interface for Console Hosting Application</Description>
+		<ApplicationIcon>icon.ico</ApplicationIcon>
+		<PackageIcon>icon.png</PackageIcon>
 	</PropertyGroup>
+	<ItemGroup>
+	  <None Remove=".gitattributes" />
+	  <None Remove=".gitignore" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Content Include="icon.ico" />
+	</ItemGroup>
 	<ItemGroup>
 	  <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
 	</ItemGroup>
 	<ItemGroup>
-		<None Include="readme.md" Pack="true" PackagePath="\"/>
+		<None Include="readme.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+	<ItemGroup>
+	  <None Update="icon.png">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
 	</ItemGroup>	
 </Project>
