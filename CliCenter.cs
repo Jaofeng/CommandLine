@@ -61,7 +61,7 @@ public sealed class CliCenter
     #endregion
 
     #region Public Events
-    /// <summary>自 <see cref="ReadLine.Read"/> 接收到指令時所產生的事件回呼。</summary>
+    /// <summary>自 <see cref="Reader.Read"/> 接收到指令時所產生的事件回呼。</summary>
     public event CommandEnterHandler? CommandEntered;
     /// <summary>執行對應指令前所產生的事件回呼。</summary>
     public event ExecuteCommandHandler? BeforeMethodExecute;
@@ -102,14 +102,16 @@ public sealed class CliCenter
     public string Prompt { get; set; } = string.Empty;
     /// <summary>CLI 的指令提示字串的顯示顏色。</summary>
     public ConsoleColor PromptColor { get; set; } = Console.ForegroundColor;
+    /// <summary>設定或取得密碼輸入時的顯示字元。</summary>
+    public static char? PasswordChar { get; set; }
     /// <summary>設定或取得目前使用的分類標籤字串。</summary>
     public string UseTag { get; set; } = string.Empty;
     /// <summary>設定或取得歷史指令清單的分類名稱。</summary>
 #pragma warning disable CA1822 // Mark members as static
     public string HistoryPool
     {
-        get => ReadLine.PoolName;
-        set => ReadLine.SetPool(value);
+        get => Reader.PoolName;
+        set => Reader.SetPool(value);
     }
 #pragma warning restore CA1822 // Mark members as static
     /// <summary>取得目前當下正在執行的指令。</summary>
@@ -144,23 +146,25 @@ public sealed class CliCenter
     }
     #endregion
 
-    #region Public Construct Method : CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL)
+    #region Public Construct Method : CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null)
     /// <summary>建立新的 <see cref="CliCenter"/> 執行個體。</summary>
     /// <param name="prompt">指令提示字串。</param>
     /// <param name="promptColor">指令提示字串顏色。</param>
     /// <param name="historyPool">歷史指令清單的分類字串，預設值為 <see cref="DEFAULT_POOL"/>。</param>
-    public CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL) : this()
+    /// <param name="pwdChar">密碼顯示字元。</param>
+    public CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null) : this()
     {
         Prompt = prompt;
         HistoryPool = historyPool;
         PromptColor = promptColor ?? Console.ForegroundColor;
+        PasswordChar = Reader.PasswordChar = pwdChar;
     }
     #endregion
 
     #region Internal Construct Method : CliCenter(CliOptions opts)
     /// <summary>建立新的 <see cref="CliCenter"/> 執行個體，本建立式僅供 <see cref="CliHostedService"/> 使用。</summary>
     /// <param name="opts">供 <see cref="CliHostedService"/> 傳遞用的設定類別。</param>
-    internal CliCenter(CliOptions opts) : this(opts.Prompt, opts.PromptColor, opts.HistoryPool) { }
+    internal CliCenter(CliOptions opts) : this(opts.Prompt, opts.PromptColor, opts.HistoryPool, opts.PasswordChar) { }
     #endregion
 
 
@@ -500,8 +504,27 @@ public sealed class CliCenter
             _CommandSuggestions = GetSuggestions;
         else
             _CommandSuggestions = func;
-        ReadLine.AutoCompletionHandler = _CommandSuggestions;
+        Reader.AutoCompletionHandler = _CommandSuggestions;
     }
+    #endregion
+
+    #region Public Method : string ReadLine(string prompt)
+    /// <summary>讀取一行文字。</summary>
+    /// <param name="prompt">提示文字。</param>
+    /// <returns>使用者輸入的文字字串。</returns>
+    public string ReadLine(string prompt)
+    {
+        var res = Reader.Read(prompt, PromptColor);
+        Reader.RemoveLastHistory();
+        return res;
+    }
+    #endregion
+
+    #region Public Method : string ReadPassword(string prompt)
+    /// <summary>讀取密碼。</summary>
+    /// <param name="prompt">提示文字。</param>
+    /// <returns>使用者輸入的密碼。
+    public string ReadPassword(string prompt) => Reader.ReadPassword(prompt, PasswordChar);
     #endregion
 
 
@@ -513,13 +536,13 @@ public sealed class CliCenter
 
         string? _full;
         ConsoleColor _OrigColor = Console.ForegroundColor;
-        string cmd = ReadLine.Read(Prompt, PromptColor).Trim();
+        string cmd = Reader.Read(Prompt, PromptColor).Trim();
 
         while (!cancellationToken.IsCancellationRequested)
         {
             if (string.IsNullOrWhiteSpace(cmd))
             {
-                cmd = ReadLine.Read(Prompt, PromptColor).Trim();
+                cmd = Reader.Read(Prompt, PromptColor).Trim();
                 continue;
             }
             OnCommandEntered(cmd);
@@ -570,9 +593,9 @@ public sealed class CliCenter
             if (!cancellationToken.IsCancellationRequested)
             {
                 if (cmd.EndsWith('?'))
-                    cmd = ReadLine.Read(Prompt, PromptColor, cmd.Remove(cmd.Length - 1)).Trim();
+                    cmd = Reader.Read(Prompt, PromptColor, cmd.Remove(cmd.Length - 1)).Trim();
                 else
-                    cmd = ReadLine.Read(Prompt, PromptColor).Trim();
+                    cmd = Reader.Read(Prompt, PromptColor).Trim();
             }
         }
         Console.ForegroundColor = _OrigColor;
@@ -640,7 +663,7 @@ public sealed class CliCenter
     private void HandleQuestionMark(string text)
     {
         // Show Help or commands
-        ReadLine.RemoveLastHistory();
+        Reader.RemoveLastHistory();
         int _idx = text.LastIndexOf(' ');
         if (text.Length == 1)
             ShowHelp("");
