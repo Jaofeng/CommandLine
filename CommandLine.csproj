@@ -17,6 +17,7 @@
 		<Company>Chen Jaofeng</Company>
 		<Authors>Chen Jaofeng</Authors>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinRelease|AnyCPU'">
 		<Optimize>True</Optimize>
@@ -37,6 +38,8 @@
 		<Description>Command Line Interface for Console Hosting Application</Description>
 		<ApplicationIcon>Images\icon.ico</ApplicationIcon>
 		<PackageIcon>icon.png</PackageIcon>
+		<PackageProjectUrl>https://github.com/Jaofeng/CommandLine</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/Jaofeng/CommandLine</RepositoryUrl>
 	</PropertyGroup>
 	<ItemGroup>
 	  <None Remove=".gitattributes" />
