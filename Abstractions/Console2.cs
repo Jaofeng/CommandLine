@@ -11,7 +11,8 @@ internal sealed class Console2 : IConsole
         get => !OperatingSystem.IsWindows() || Console.CursorVisible;
         set => Console.CursorVisible = value;
     }
-    public bool PasswordMode { get; set; }
+    public bool PasswordMode { get; set; } = false;
+    public char? PasswordChar { get; set; }
 
     public void SetBufferSize(int width, int height)
     {
@@ -30,7 +31,12 @@ internal sealed class Console2 : IConsole
     public void Write(string? value)
     {
         if (PasswordMode && value is not null)
-            value = "*".PadRight(value.Length, '*');
+        {
+            if (PasswordChar.HasValue)
+                value = "".PadRight(value.Length, PasswordChar.Value);
+            else
+                value = "";
+        }
         Console.Write(value);
     }
     public void WriteLine(string? value) => Console.WriteLine(value);
