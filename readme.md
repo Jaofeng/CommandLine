@@ -1,4 +1,19 @@
-﻿# 主控台指令行介面(Command Line Interface for Console Host Application) For .Net Core
+﻿# 主控台指令行介面<br>Command Line Interface for Console Host Application
+
+
+## 版本紀錄
+|日期|版本|說明|
+|----|----|----|
+|2023-05-26|v1.30.702.200526|首次發布
+|2023-06-05|v1.31.710|新增密碼字元設定選項
+
+
+## 引用宣告
+本 `CJF.CommandLine` 部分原始碼來自 [Github](https://github.com/) [tonerdo/readline](https://github.com/tonerdo/readline/tree/master) 專案
+
+## Github Repository
+https://github.com/Jaofeng/CommandLine
+
 
 ## 使用方法：
 ```C#
@@ -14,7 +29,23 @@ var host = Host.CreateDefaultBuilder(args)
 ```
 `UseCommandLine` 為 `IHostBuilder` 的擴充函示。
 
-多載方法如下：
+## 設定選項類別 
+```C#
+/// <summary>提供 <see cref="CliHostedService"/> 的設定項目。</summary>
+public sealed class CliOptions
+{
+    /// <summary>設定或取得 CLI 的指令提示字串。</summary>
+    public string Prompt { get; set; } = "> ";
+    /// <summary>設定或取得 CLI 的指令提示字串的顏色。</summary>
+    public ConsoleColor PromptColor { get; set; } = Console.ForegroundColor;
+    /// <summary>設定或取得歷史指令清單的分類字串。</summary>
+    public string HistoryPool { get; set; } = CliCenter.DEFAULT_POOL;
+    /// <summary>設定或取得密碼輸入時的顯示字元。</summary>
+    public char? PasswordChar { get; set; }
+}
+```
+
+## 多載方法
 ```C#
 /// <summary>使用預設的 <see cref="CliOptions"/> 來建立 <see cref="CliHostedService"/> 服務，提供程式內命令列(<see href="https://en.wikipedia.org/wiki/Command-line_interface">Command Line Interface</see>)功能。</summary>
 /// <param name="hostBuilder">由 <see cref="Host"/> 建立出來的 <see cref="IHostBuilder"/> 執行個體。</param>
@@ -80,7 +111,55 @@ public string FullCommand { get; private set; }
 public MethodInfo? Method { get; internal set; } = null;
 ```
 
-當使用正規表示式時，需指定 `IsRegular` 屬性值為 `true`、`RegularHelp` 說明該表示式的意義。
+當 `command` 使用正規表示式時，需指定 `IsRegular` 屬性值為 `true`、`RegularHelp` 說明該表示式的意義。
+
+內建以下正規表示式
+```C#
+/// <summary>一般字詞檢查式。</summary>
+public const string WORD_REGEX = @"[^\d\s\.]\w+";
+/// <summary>以單引號或雙引號標示的文字，或一般字詞。</summary>
+public const string STRING_REGEX = @"(""[^""]*""|'[^']*'|[^\d\s\.]\w+)";
+/// <summary>正整數數字檢查式。</summary>
+public const string UINT_REGEX = @"\d+";
+/// <summary>整數數字檢查式。</summary>
+public const string INT_REGEX = @"-?\d+";
+/// <summary>含小數點的數字檢查式。</summary>
+public const string DECIMAL_REGEX = @"-?[0-9]+(\.[0-9]+)?";
+/// <summary>UINT16 數字檢查式。</summary>
+public const string UINT16_REGEX = @"([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])";
+/// <summary>INT16 數字檢查式。</summary>
+public const string INT16_REGEX = @"(-?([0-9]{0,4}|[0-2][0-9]{4}|31[0-9]{3}|3276[0-7])|-32768)";
+/// <summary>16 進位字串檢查式。</summary>
+public const string HEX_REGEX = @"[0-9a-fA-F]+";
+/// <summary>1 位元組的 16 進位字串檢查式。</summary>
+public const string HEX1BYTE_REGEX = @"[0-9a-fA-F]{2}";
+/// <summary>2 位元組的 16 進位字串檢查式。</summary>
+public const string HEX2BYTE_REGEX = @"[0-9a-fA-F]{4}";
+/// <summary>IP 位址檢查式。</summary>
+public const string IP_REGEX = @"((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|\s?|$)){4}";
+/// <summary>通訊埠號檢查式。</summary>
+public const string PORT_REGEX = UINT16_REGEX;
+/// <summary>電話檢查式。</summary>
+public const string PHONE_REGEX = @"(09\d{2}-*\d{3}-*\d{3}|\(*0\d\)*-*\d{3,4}-*\d{4})";
+/// <summary>信箱檢查式。</summary>
+public const string EMAIL_REGEX = @"\w+((-\w+)|(\.\w+))*\@[A-Za-z0-9]+((\.|-)[A-Za-z0-9]+)*\.[A-Za-z]+";
+/// <summary>密碼驗證規則。</summary>
+/// <remarks>
+/// <para>1. 至少一個英文字母 (?=.*?[A-Za-z])。</para>
+/// <para>2. 至少一個數字(?=.*?[0-9])。</para>
+/// <para>3. 長度至少為 8 個字元.{8,}。</para>
+/// </remarks>
+public const string PWD_REGEX = @"(?=.*?[A-Za-z])(?=.*?[0-9]).{8,}";
+/// <summary>密碼驗證規則。</summary>
+/// <remarks>
+/// <para>1. 至少一個大寫英文字母 (?=.*?[A-Z])。</para>
+/// <para>2. 至少一個小寫的英文字母 (?=.*?[a-z])。</para>
+/// <para>3. 至少一個數字 (?=.*?[0-9])。</para>
+/// <para>4. 至少一個特殊字元 (?=.*?[#?!@$%^&amp;*-])。</para>
+/// <para>5. 長度至少為 8 個字元 .{8,}。</para>
+/// </remarks>
+public const string PWD_REGEX_COMPLEX = @"(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}";
+```
 
 ## 函示定義
 綁定 `CommandAttribute` 自訂屬性的函示需定義為 static 類型，支援的格式如下：
@@ -96,7 +175,7 @@ static void CLI_Mathod6(CliCenter cli, CommandAttribute cmd, params string[] arg
 
 除了使用 `CommandAttribute` 自訂屬性的方式定義外，還可以使用 `Append` 方法新增指定。
 
-如以下使用範例：
+## 使用範例
 ```C#
 // File Name : Program.cs
 partial class Program
@@ -194,3 +273,8 @@ partial class Program
 	#endregion
 }
 ```
+
+## 範例結果
+![範例結果](https://i.imgur.com/AbY81PB.png)
+
+
