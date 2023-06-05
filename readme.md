@@ -1,5 +1,6 @@
 ﻿# 主控台指令行介面<br>Command Line Interface for Console Host Application
 
+[![NuGet version](https://badge.fury.io/nu/CJF.CommandLine.svg)](https://badge.fury.io/nu/CJF.CommandLine)
 
 ## 版本紀錄
 |日期|版本|說明|
