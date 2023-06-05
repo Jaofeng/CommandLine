@@ -3,7 +3,7 @@
 namespace CJF.CommandLine;
 
 #region Public Delegate Methods
-/// <summary>定義自 <see cref="ReadLine.Read"/> 接收到指令的事件委派函示。</summary>
+/// <summary>定義自 <see cref="Reader.Read"/> 接收到指令的事件委派函示。</summary>
 /// <param name="sender">發送來源，即為 <see cref="CliCenter"/> 執行個體。</param>
 /// <param name="commandLine">完整的指令字串。</param>
 public delegate void CommandEnterHandler(CliCenter sender, string commandLine);
