@@ -25,6 +25,8 @@ public sealed class CliOptions
     public ConsoleColor PromptColor { get; set; } = Console.ForegroundColor;
     /// <summary>設定或取得歷史指令清單的分類字串。</summary>
     public string HistoryPool { get; set; } = CliCenter.DEFAULT_POOL;
+    /// <summary>設定或取得密碼輸入時的顯示字元。</summary>
+    public char? PasswordChar { get; set; }
 }
 #endregion
 
