@@ -1,7 +1,7 @@
 ﻿/*
- * File Name    : ReadLine.cs
+ * File Name    : Reader.cs
  * From         : https://github.com/tonerdo/readline/blob/master/src/ReadLine/ReadLine.cs
- * Last Updated : Chen Jaofeng @ 2023/05/19
+ * Last Updated : Chen Jaofeng @ 2023/06/05
  */
 
 using CJF.CommandLine.Abstractions;
@@ -10,15 +10,15 @@ using System.Runtime.Versioning;
 namespace CJF.CommandLine;
 
 #region Public Static Class : ReadLine
-/// <summary>靜態類別 <see cref="ReadLine"/>。</summary>
+/// <summary>靜態類別 <see cref="Reader"/>。</summary>
 [UnsupportedOSPlatform("browser")]
-public static class ReadLine
+static class Reader
 {
     private static readonly Dictionary<string, List<string>> _HistoryPool;
     private static bool _Stop = false;
 
     #region Private Static Construct Method : ReadLine()
-    static ReadLine()
+    static Reader()
     {
         _HistoryPool = new Dictionary<string, List<string>>();
     }
@@ -28,6 +28,8 @@ public static class ReadLine
     public static bool HistoryEnabled { get; set; } = true;
     /// <summary>取得或設定當前歷史紀錄清單的名稱。</summary>
     internal static string PoolName { get; private set; } = "";
+    /// <summary>設定或取得密碼輸入時的顯示字元。</summary>
+    public static char? PasswordChar { get; set; }
     /// <summary>新增歷史指令。</summary>
     /// <param name="text">指令。</param>
     public static void AddHistory(params string[] text) => _HistoryPool[PoolName].AddRange(text);
@@ -38,7 +40,7 @@ public static class ReadLine
     /// <summary>取得或設定自動完成處理程序。</summary>
     public static Func<string, int, string[]?>? AutoCompletionHandler { private get; set; } = null;
     /// <summary>刪除最後一筆歷史紀錄。</summary>
-    public static void RemoveLastHistory() => _HistoryPool[PoolName].RemoveAt(_HistoryPool.Count - 1);
+    public static void RemoveLastHistory() => _HistoryPool[PoolName].RemoveAt(_HistoryPool[PoolName].Count - 1);
 
     #region Public Static Method : string Read(string prompt = "", ConsoleColor? promptColor = null, string @default = "")
     /// <summary>讀取使用者輸入的文字。</summary>
@@ -92,14 +94,17 @@ public static class ReadLine
     }
     #endregion
 
-    #region Publuc Static Method : string ReadPassword(string prompt = "")
+    #region Publuc Static Method : string ReadPassword(string prompt = "", char? pwdChar = null)
     /// <summary>讀取使用者輸入的密碼。</summary>
     /// <param name="prompt">提示文字。</param>
+    /// <param name="pwdChar">顯示用的密碼字元。</param>
     /// <returns>使用者輸入的密碼。</returns>
-    public static string ReadPassword(string prompt = "")
+    public static string ReadPassword(string prompt = "", char? pwdChar = null)
     {
         if (!string.IsNullOrWhiteSpace(prompt)) Console.Write(prompt);
-        KeyHandler keyHandler = new KeyHandler(new Console2() { PasswordMode = true }, null, null);
+        if (!pwdChar.HasValue)
+            pwdChar = PasswordChar;
+        KeyHandler keyHandler = new(new Console2() { PasswordMode = true, PasswordChar = pwdChar }, null, null);
         _Stop = false;
         return GetText(keyHandler);
     }
