@@ -7,8 +7,10 @@
 ## 版本紀錄
 |日期|版本|說明|
 |----|----|----|
-|2023-05-26|v1.30.702.200526|首次發布
+|2023-06-27|v1.32.725|1. 新增除錯模式，於 `CliOptions` 中設定；設定後，會在指令執行前顯示完整指令以及執行的函示名稱。
+|||2. 檢驗時，遇到兩個以上模糊曖昧的規則時，預設會執行第一個非正規表示式的規則，但最好避免此種狀況。
 |2023-06-05|v1.31.710|新增密碼字元設定選項
+|2023-05-26|v1.30.702.200526|首次發布
 
 
 ## 引用宣告
@@ -45,6 +47,8 @@ public sealed class CliOptions
     public string HistoryPool { get; set; } = CliCenter.DEFAULT_POOL;
     /// <summary>設定或取得密碼輸入時的顯示字元。</summary>
     public char? PasswordChar { get; set; }
+    /// <summary>設定或取得是否啟用除錯模式。</summary>
+    public bool DebugMode { get; set; } = false;
 }
 ```
 

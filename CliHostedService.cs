@@ -27,6 +27,8 @@ public sealed class CliOptions
     public string HistoryPool { get; set; } = CliCenter.DEFAULT_POOL;
     /// <summary>設定或取得密碼輸入時的顯示字元。</summary>
     public char? PasswordChar { get; set; }
+    /// <summary>設定或取得是否啟用除錯模式。</summary>
+    public bool DebugMode { get; set; } = false;
 }
 #endregion
 

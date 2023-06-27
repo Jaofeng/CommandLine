@@ -104,6 +104,8 @@ public sealed class CliCenter
     public ConsoleColor PromptColor { get; set; } = Console.ForegroundColor;
     /// <summary>設定或取得密碼輸入時的顯示字元。</summary>
     public static char? PasswordChar { get; set; }
+    /// <summary>設定或取得是否啟用除錯模式。</summary>
+    public bool DebugMode { get; set; } = false;
     /// <summary>設定或取得目前使用的分類標籤字串。</summary>
     public string UseTag { get; set; } = string.Empty;
     /// <summary>設定或取得歷史指令清單的分類名稱。</summary>
@@ -152,19 +154,21 @@ public sealed class CliCenter
     /// <param name="promptColor">指令提示字串顏色。</param>
     /// <param name="historyPool">歷史指令清單的分類字串，預設值為 <see cref="DEFAULT_POOL"/>。</param>
     /// <param name="pwdChar">密碼顯示字元。</param>
-    public CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null) : this()
+    /// <param name="debug">是否啟用除錯模式。</param>
+    public CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null, bool debug = false) : this()
     {
         Prompt = prompt;
         HistoryPool = historyPool;
         PromptColor = promptColor ?? Console.ForegroundColor;
         PasswordChar = Reader.PasswordChar = pwdChar;
+        DebugMode = debug;
     }
     #endregion
 
     #region Internal Construct Method : CliCenter(CliOptions opts)
     /// <summary>建立新的 <see cref="CliCenter"/> 執行個體，本建立式僅供 <see cref="CliHostedService"/> 使用。</summary>
     /// <param name="opts">供 <see cref="CliHostedService"/> 傳遞用的設定類別。</param>
-    internal CliCenter(CliOptions opts) : this(opts.Prompt, opts.PromptColor, opts.HistoryPool, opts.PasswordChar) { }
+    internal CliCenter(CliOptions opts) : this(opts.Prompt, opts.PromptColor, opts.HistoryPool, opts.PasswordChar, opts.DebugMode) { }
     #endregion
 
 
@@ -532,8 +536,6 @@ public sealed class CliCenter
     /// <summary>指令等待背景執行緒。</summary>
     internal Task WorkerProcess(CancellationToken cancellationToken)
     {
-        //Console.WriteLine($"{nameof(CliCenter)} {nameof(cancellationToken)} HashCode = {cancellationToken.GetHashCode()}");
-
         string? _full;
         ConsoleColor _OrigColor = Console.ForegroundColor;
         string cmd = Reader.Read(Prompt, PromptColor).Trim();
@@ -581,7 +583,18 @@ public sealed class CliCenter
                     else if (cas.Count() == 1)
                         InvokeCommandMethod(_full, fca);
                     else
-                        Console.WriteLine($"% Ambiguous command: \"{cmd}\"");
+                    {
+                        if (DebugMode)
+                        {
+                            Console.WriteLine($"% Ambiguous command: \"\x1B[96m{cmd}\x1B[39m\"");
+                            foreach (CommandAttribute _ca in cas)
+                                Console.WriteLine($"%   \x1B[96m{_ca.FullCommand}\x1B[39m  >>  \x1B[93m{_ca.Method!.Name}\x1B[39m");
+                        }
+                        if (cas.FirstOrDefault(_ca => !_ca.IsRegular) is CommandAttribute ca)
+                            InvokeCommandMethod(_full, ca);
+                        else
+                            Console.WriteLine($"% Ambiguous command: \"\x1B[96m{cmd}\x1B[39m\"");
+                    }
                 }
                 else
                 {
@@ -629,6 +642,8 @@ public sealed class CliCenter
                 args = Array.Empty<object>();
             try
             {
+                if (DebugMode)
+                    Console.WriteLine($"\x1B[90m[#]\x1B[39m Executing \x1B[96m{fullCommand}\x1B[39m >> \x1B[93m{cmdAttr.Method.Name}\x1B[39m");
                 if (cmdAttr.Method.IsStatic)
                     cmdAttr.Method.Invoke(null, args);
                 else
