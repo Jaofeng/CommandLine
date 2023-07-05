@@ -5,8 +5,9 @@
 
 
 ## 版本紀錄
-|日期|版本|說明|
-|----|----|----|
+|日期|版本|說明
+|----|----|----
+|2023-07-05|v1.33.732|優化內建的正規表示式規則、優化指令層級、加強指令彈性、增加 DebugMode 顯示訊息
 |2023-06-27|v1.32.725|1. 新增除錯模式，於 `CliOptions` 中設定；設定後，會在指令執行前顯示完整指令以及執行的函示名稱。
 |||2. 檢驗時，遇到兩個以上模糊曖昧的規則時，預設會執行第一個非正規表示式的規則，但最好避免此種狀況。
 |2023-06-05|v1.31.710|新增密碼字元設定選項
@@ -133,9 +134,9 @@ public const string INT_REGEX = @"-?\d+";
 /// <summary>含小數點的數字檢查式。</summary>
 public const string DECIMAL_REGEX = @"-?[0-9]+(\.[0-9]+)?";
 /// <summary>UINT16 數字檢查式。</summary>
-public const string UINT16_REGEX = @"([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])";
+public const string UINT16_REGEX = @"(\d{1,4}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])";
 /// <summary>INT16 數字檢查式。</summary>
-public const string INT16_REGEX = @"(-?([0-9]{0,4}|[0-2][0-9]{4}|31[0-9]{3}|3276[0-7])|-32768)";
+public const string INT16_REGEX = @"(-?(\d{0,4}|[0-2]\d{4}|31\d{3}|3276[0-7])|-32768)";
 /// <summary>16 進位字串檢查式。</summary>
 public const string HEX_REGEX = @"[0-9a-fA-F]+";
 /// <summary>1 位元組的 16 進位字串檢查式。</summary>
@@ -143,7 +144,7 @@ public const string HEX1BYTE_REGEX = @"[0-9a-fA-F]{2}";
 /// <summary>2 位元組的 16 進位字串檢查式。</summary>
 public const string HEX2BYTE_REGEX = @"[0-9a-fA-F]{4}";
 /// <summary>IP 位址檢查式。</summary>
-public const string IP_REGEX = @"((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|\s?|$)){4}";
+public const string IP_REGEX = @"((25[0-5]|2[0-4]\d|[01]?\d{1,2})(\.|\s?|$)){4}";
 /// <summary>通訊埠號檢查式。</summary>
 public const string PORT_REGEX = UINT16_REGEX;
 /// <summary>電話檢查式。</summary>
