@@ -935,7 +935,10 @@ public sealed class CliCenter
         Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Command Tree:");
         foreach (CommandAttribute ca in _Commands.Where(_c => string.IsNullOrEmpty(_c.Parent)))
         {
-            Console.WriteLine($" {ca.Command}");
+            if (ca.Method is null)
+                Console.WriteLine($" \x1B[92m{ca.Command.PadRight(42)}\x1B[39m");
+            else
+                Console.WriteLine($" \x1B[92m{ca.Command.PadRight(42)}\x1B[39m > \x1B[94m{ca.Method?.Name}\x1B[39m");
             _PrintCommandTree(ca);
         }
     }
@@ -947,9 +950,13 @@ public sealed class CliCenter
         foreach (CommandAttribute ca in cmd.Childs)
         {
             if (ca.IsRegular)
-                Console.WriteLine($" {"".PadLeft((ca.Level - 1) * 2)}+ {ca.RegularHelp}");
+                Console.Write($" {"".PadLeft((ca.Level - 1) * 2)}+ \x1B[93m{ca.RegularHelp.PadRight(40 - (ca.Level - 1) * 2)}\x1B[39m");
             else
-                Console.WriteLine($" {"".PadLeft((ca.Level - 1) * 2)}+ {ca.Command}");
+                Console.Write($" {"".PadLeft((ca.Level - 1) * 2)}+ \x1B[92m{ca.Command.PadRight(40 - (ca.Level - 1) * 2)}\x1B[39m");
+            if (ca.Method is null)
+                Console.WriteLine();
+            else
+                Console.WriteLine($" > \x1B[94m{ca.Method?.Name}\x1B[39m");
             _PrintCommandTree(ca);
         }
     }
