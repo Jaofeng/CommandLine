@@ -21,9 +21,9 @@ public sealed class CliCenter
     /// <summary>含小數點的數字檢查式。</summary>
     public const string DECIMAL_REGEX = @"-?[0-9]+(\.[0-9]+)?";
     /// <summary>UINT16 數字檢查式。</summary>
-    public const string UINT16_REGEX = @"([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])";
+    public const string UINT16_REGEX = @"(\d{1,4}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])";
     /// <summary>INT16 數字檢查式。</summary>
-    public const string INT16_REGEX = @"(-?([0-9]{0,4}|[0-2][0-9]{4}|31[0-9]{3}|3276[0-7])|-32768)";
+    public const string INT16_REGEX = @"(-?(\d{0,4}|[0-2]\d{4}|31\d{3}|3276[0-7])|-32768)";
     /// <summary>16 進位字串檢查式。</summary>
     public const string HEX_REGEX = @"[0-9a-fA-F]+";
     /// <summary>1 位元組的 16 進位字串檢查式。</summary>
@@ -31,7 +31,7 @@ public sealed class CliCenter
     /// <summary>2 位元組的 16 進位字串檢查式。</summary>
     public const string HEX2BYTE_REGEX = @"[0-9a-fA-F]{4}";
     /// <summary>IP 位址檢查式。</summary>
-    public const string IP_REGEX = @"((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|\s?|$)){4}";
+    public const string IP_REGEX = @"((25[0-5]|2[0-4]\d|[01]?\d{1,2})(\.|\s?|$)){4}";
     /// <summary>通訊埠號檢查式。</summary>
     public const string PORT_REGEX = UINT16_REGEX;
     /// <summary>電話檢查式。</summary>
@@ -148,7 +148,7 @@ public sealed class CliCenter
     }
     #endregion
 
-    #region Public Construct Method : CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null)
+    #region Public Construct Method : CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null, bool debug = false)
     /// <summary>建立新的 <see cref="CliCenter"/> 執行個體。</summary>
     /// <param name="prompt">指令提示字串。</param>
     /// <param name="promptColor">指令提示字串顏色。</param>
@@ -299,10 +299,10 @@ public sealed class CliCenter
     public void RebindLinkRelationship()
     {
 
-        //foreach (CommandAttribute ca in _items.Keys.Where(_ca => string.IsNullOrEmpty(_ca.Parent)))
         foreach (CommandAttribute ca in _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent)))
             SetChilds(ca);
-
+        if (DebugMode)
+            PrintCommandTree();
     }
     #endregion
 
@@ -316,13 +316,12 @@ public sealed class CliCenter
             return false;
         else
             return _Commands.Remove(cmd);
-        //return _items.Remove(cmd);
     }
     #endregion
 
     #region Public Method : void Clear()
     /// <summary>清除所有指令。</summary>
-    public void Clear() => _Commands.Clear();   // _items.Clear();
+    public void Clear() => _Commands.Clear();
     #endregion
 
     #region Public Method : bool TryGetMethod(string command, out MethodInfo? method)
@@ -336,8 +335,6 @@ public sealed class CliCenter
         {
             method = cca.Method;
             return method is not null;
-            //method = _items[cca];
-            //return true;
         }
         else
         {
@@ -364,7 +361,6 @@ public sealed class CliCenter
     /// <returns>所有列管的指令名稱清單。</returns>
     public IEnumerable<string> GetCommandNames()
     {
-        //foreach (CommandAttribute ca in _items.Keys)
         foreach (CommandAttribute ca in _Commands)
             yield return ca.FullCommand;
 
@@ -378,16 +374,16 @@ public sealed class CliCenter
     public string? AnalyzeToFullCommand(string command)
     {
         string res = "";
-        bool isRegex = false;
+        CommandAttribute? cmd = null;
         foreach (string s in SplitCommand(command))
         {
             if (string.IsNullOrWhiteSpace(s)) continue;
             if (string.IsNullOrEmpty(res))
             {
-                //var _cas = _items.Keys.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(s));
                 var _cas = _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(s));
                 if (!_cas.Any()) return null;
-                res = _cas.First().Command;
+                cmd = _cas.First();
+                res = cmd.Command;
             }
             else
             {
@@ -395,24 +391,22 @@ public sealed class CliCenter
                 bool _FindCommandAttrinute(CommandAttribute ca)
                 {
                     if (string.IsNullOrEmpty(ca.Parent)) return false;
-                    return !ca.IsRegular && ca.Command.StartsWith(s) && (!isRegex && ca.Parent.Equals(res) || isRegex && Regex.IsMatch(res, $"^{ca.Parent}$")) ||
-                        ca.IsRegular && Regex.IsMatch(s, $"^{ca.Command}$") && (!isRegex && ca.Parent.Equals(res) || isRegex && Regex.IsMatch(res, $"^{ca.Parent}$"));
+                    return ca.IsRegular && Regex.IsMatch(s, $"^{ca.Command}$") && Regex.IsMatch(res, $"^{ca.Parent}$") ||
+                        !ca.IsRegular && ca.Command.StartsWith(s) && ca.Parent.Equals(res);
                 }
                 #endregion
 
-                //if (_items.Keys.FirstOrDefault(_FindCommandAttrinute) is CommandAttribute _ca)
-                if (_Commands.FirstOrDefault(_FindCommandAttrinute) is CommandAttribute _ca)
+                if (cmd!.Childs.FirstOrDefault(_FindCommandAttrinute) is CommandAttribute _ca)
                 {
                     if (_ca.IsRegular)
-                    {
                         res += " " + s;
-                        isRegex = true;
-                    }
                     else
                         res += " " + _ca.Command;
+                    cmd = _ca;
                 }
                 else
                     break;
+
             }
         }
         return res;
@@ -465,14 +459,10 @@ public sealed class CliCenter
         IEnumerable<CommandAttribute> _cas;
         if (string.IsNullOrEmpty(command))
         {
-            //if (string.IsNullOrEmpty(UseTag))
-            //    _cas = _items.Keys.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && string.IsNullOrEmpty(_ca.Tag));
-            //else
-            //    _cas = _items.Keys.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && (_ca.Tag == "" || _ca.Tag == UseTag));
             if (string.IsNullOrEmpty(UseTag))
                 _cas = _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && string.IsNullOrEmpty(_ca.Tag));
             else
-                _cas = _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && (_ca.Tag == "" || _ca.Tag == UseTag));
+                _cas = _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && (string.IsNullOrEmpty(_ca.Tag) || _ca.Tag == UseTag));
         }
         else if (string.IsNullOrEmpty(subCmd))
             _cas = cca.Childs;
@@ -491,8 +481,6 @@ public sealed class CliCenter
                     Console.WriteLine($"  {ca.Command.PadRight(_m + 5)}{ca.HelpText}");
             }
         }
-        //if (!string.IsNullOrEmpty(command) && (cca.Childs.Length == 0 || _items.ContainsKey(cca)))
-        //if (!string.IsNullOrEmpty(command) && cca.Childs.Count(_c => _c.Required) == 0)
         if (!string.IsNullOrEmpty(command) && !cca.Childs.Any(_c => _c.Required))
             Console.WriteLine($"  {"<cr>".PadRight(_m + 5)}<cr>");
         Console.WriteLine();
@@ -549,6 +537,8 @@ public sealed class CliCenter
             }
             OnCommandEntered(cmd);
             _full = AnalyzeToFullCommand(cmd);
+            if (DebugMode)
+                Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Full Command: \x1B[92m{_full}\x1B[39m");
             if (_full is null)
             {
                 if (cmd.EndsWith('?'))
@@ -586,9 +576,9 @@ public sealed class CliCenter
                     {
                         if (DebugMode)
                         {
-                            Console.WriteLine($"% Ambiguous command: \"\x1B[96m{cmd}\x1B[39m\"");
+                            Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Ambiguous command: \"\x1B[96m{cmd}\x1B[39m\"");
                             foreach (CommandAttribute _ca in cas)
-                                Console.WriteLine($"%   \x1B[96m{_ca.FullCommand}\x1B[39m  >>  \x1B[93m{_ca.Method!.Name}\x1B[39m");
+                                Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m   \x1B[96m{_ca.FullCommand}\x1B[39m  >>  \x1B[93m{_ca.Method!.Name}\x1B[39m");
                         }
                         if (cas.FirstOrDefault(_ca => !_ca.IsRegular) is CommandAttribute ca)
                             InvokeCommandMethod(_full, ca);
@@ -643,7 +633,7 @@ public sealed class CliCenter
             try
             {
                 if (DebugMode)
-                    Console.WriteLine($"\x1B[90m[#]\x1B[39m Executing \x1B[96m{fullCommand}\x1B[39m >> \x1B[93m{cmdAttr.Method.Name}\x1B[39m");
+                    Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Executing \x1B[96m{fullCommand}\x1B[39m >> \x1B[93m{cmdAttr.Method.Name}\x1B[39m");
                 if (cmdAttr.Method.IsStatic)
                     cmdAttr.Method.Invoke(null, args);
                 else
@@ -727,13 +717,12 @@ public sealed class CliCenter
     /// <param name="cmd">欲綁定的指令。</param>
     private void SetChilds(CommandAttribute cmd)
     {
-        int _lv = (string.IsNullOrEmpty(cmd.Parent) ? 0 : SplitCommand(cmd.Parent).Length) + 1;
+        cmd.ClearChilds();
+        cmd.Level = (string.IsNullOrEmpty(cmd.Parent) ? 0 : SplitCommand(cmd.Parent).Length) + 1;
         string _pc = string.IsNullOrEmpty(cmd.Parent) ? cmd.Command : $"{cmd.Parent} {cmd.Command}";
-        //foreach (CommandAttribute ca in _items.Keys.Where(_ca => !string.IsNullOrEmpty(_ca.Parent) && _ca.Parent.Equals(_pc) && _ca.Tag == cmd.Tag))
-        foreach (CommandAttribute ca in _Commands.Where(_ca => !string.IsNullOrEmpty(_ca.Parent) && _ca.Parent.Equals(_pc) && _ca.Tag == cmd.Tag))
+        foreach (CommandAttribute ca in _Commands.Where(_ca => !string.IsNullOrEmpty(_ca.Parent) && (Regex.IsMatch(_pc, $"^{_ca.Parent}$") || _pc == _ca.Parent) && _ca.Tag == cmd.Tag))
         {
-            //if (cmd.Childs.FirstOrDefault(cmdAttr => cmdAttr.Command.Equals(ca.Command) && cmdAttr.Parent == ca.Parent && cmdAttr.Tag == ca.Tag) is null)
-            if (!cmd.Childs.Any(_ca => _ca.Command.Equals(ca.Command) && _ca.Parent == ca.Parent && _ca.Tag == ca.Tag))
+            if (!cmd.Childs.Contains(ca))
                 cmd.AddChild(ca);
             SetChilds(ca);
         }
@@ -751,14 +740,10 @@ public sealed class CliCenter
         if (!command.Contains(' '))
         {
             CommandAttribute? ca;
-            //if (string.IsNullOrEmpty(UseTag))
-            //    ca = _items.Keys.FirstOrDefault(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && string.IsNullOrEmpty(_ca.Tag));
-            //else
-            //    ca = _items.Keys.FirstOrDefault(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && (_ca.Tag == "" || _ca.Tag == UseTag));
             if (string.IsNullOrEmpty(UseTag))
                 ca = _Commands.FirstOrDefault(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && string.IsNullOrEmpty(_ca.Tag));
             else
-                ca = _Commands.FirstOrDefault(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && (_ca.Tag == "" || _ca.Tag == UseTag));
+                ca = _Commands.FirstOrDefault(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && (string.IsNullOrEmpty(_ca.Tag) || _ca.Tag == UseTag));
             if (ca is not null) cmd = ca;
         }
         else
@@ -814,14 +799,10 @@ public sealed class CliCenter
         var lca = new List<CommandAttribute>();
         if (!command.Contains(' '))
         {
-            //if (string.IsNullOrEmpty(UseTag))
-            //    lca.AddRange(_items.Keys.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && string.IsNullOrEmpty(_ca.Tag)));
-            //else
-            //    lca.AddRange(_items.Keys.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && (_ca.Tag == "" || _ca.Tag == UseTag)));
             if (string.IsNullOrEmpty(UseTag))
                 lca.AddRange(_Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && string.IsNullOrEmpty(_ca.Tag)));
             else
-                lca.AddRange(_Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && (_ca.Tag == "" || _ca.Tag == UseTag)));
+                lca.AddRange(_Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && (string.IsNullOrEmpty(_ca.Tag) || _ca.Tag == UseTag)));
         }
         else
         {
@@ -882,7 +863,7 @@ public sealed class CliCenter
     {
         if (CommandEntered is null) return;
         foreach (CommandEnterHandler del in CommandEntered.GetInvocationList().Cast<CommandEnterHandler>())
-            del.BeginInvoke(this, command, null, null);
+            del.Invoke(this, command);
     }
     #endregion
 
@@ -946,5 +927,32 @@ public sealed class CliCenter
     }
     #endregion
 
+
+    #region Internal Method : void PrintCommandTree(IEnumerable<CommandAttribute> commands, int level = 0)
+    /// <summary>顯示 Command 集合的階層結構。</summary>
+    internal void PrintCommandTree()
+    {
+        Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Command Tree:");
+        foreach (CommandAttribute ca in _Commands.Where(_c => string.IsNullOrEmpty(_c.Parent)))
+        {
+            Console.WriteLine($" {ca.Command}");
+            _PrintCommandTree(ca);
+        }
+    }
+    #endregion
+
+    #region Private Method : void _PrintCommandTree(CommandAttribute cmd)
+    private void _PrintCommandTree(CommandAttribute cmd)
+    {
+        foreach (CommandAttribute ca in cmd.Childs)
+        {
+            if (ca.IsRegular)
+                Console.WriteLine($" {"".PadLeft((ca.Level - 1) * 2)}+ {ca.RegularHelp}");
+            else
+                Console.WriteLine($" {"".PadLeft((ca.Level - 1) * 2)}+ {ca.Command}");
+            _PrintCommandTree(ca);
+        }
+    }
+    #endregion
 }
 #endregion
