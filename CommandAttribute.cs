@@ -36,6 +36,8 @@ public sealed class CommandAttribute : Attribute
     public string FullCommand { get; private set; }
     /// <summary>指令執行的方法定義。</summary>
     public MethodInfo? Method { get; internal set; } = null;
+    /// <summary>指令階層層級。</summary>
+    public int Level { get; internal set; } = 0;
     #endregion
 
     #region Public Construct Method : CommandAttribute(string command, string helpText, string? parent = null)
@@ -67,12 +69,17 @@ public sealed class CommandAttribute : Attribute
     internal void AddChilds(IEnumerable<CommandAttribute> cmds) => _Childs.AddRange(cmds);
     #endregion
 
+    #region Internal Method : void ClearChilds()
+    /// <summary>清除所有子指令。</summary>
+    internal void ClearChilds() => _Childs.Clear();
+    #endregion
+
     #region Public Method : bool IsValid()
     /// <summary>檢驗此 <see cref="CommandAttribute"/> 是否有效。</summary>
     /// <returns>有效: <see langword="true"/>, 否則為 <see langword="false"/>。</returns>
     public bool IsValid() => !string.IsNullOrEmpty(Command) && !Command.Contains(' ') && (string.IsNullOrEmpty(Parent) || Parent is not null && !Parent.EndsWith(" "));
     #endregion
-
+   
 
     #region Public Override Method : bool Match(object? obj)
     /// <summary>判斷指定的物件是否等於目前的 <see cref="CommandAttribute"/>。</summary>
