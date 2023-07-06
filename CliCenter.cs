@@ -387,16 +387,15 @@ public sealed class CliCenter
             }
             else
             {
-                #region Predicate Method : bool _FindCommandAttrinute(CommandAttribute ca)
-                bool _FindCommandAttrinute(CommandAttribute ca)
+                #region Predicate Method : bool _FindChild(CommandAttribute ca)
+                bool _FindChild(CommandAttribute ca)
                 {
                     if (string.IsNullOrEmpty(ca.Parent)) return false;
-                    return ca.IsRegular && Regex.IsMatch(s, $"^{ca.Command}$") && Regex.IsMatch(res, $"^{ca.Parent}$") ||
-                        !ca.IsRegular && ca.Command.StartsWith(s) && ca.Parent.Equals(res);
+                    return ca.IsRegular && Regex.IsMatch(s, $"^{ca.Command}$") || !ca.IsRegular && ca.Command.StartsWith(s);
                 }
                 #endregion
 
-                if (cmd!.Childs.FirstOrDefault(_FindCommandAttrinute) is CommandAttribute _ca)
+                if (cmd!.Childs.FirstOrDefault(_FindChild) is CommandAttribute _ca)
                 {
                     if (_ca.IsRegular)
                         res += " " + s;
@@ -545,9 +544,8 @@ public sealed class CliCenter
                     HandleQuestionMark(cmd);
                 else
                 {
-                    Console.Write("".PadLeft(AnsiRegex.Replace(Prompt, "").Length));
-                    Console.WriteLine("^");
-                    Console.WriteLine("% Invalid input detected at '^' marker.");
+                    Console.WriteLine($"{"".PadLeft(AnsiRegex.Replace(Prompt, "").Length)}\x1B[91m^\x1B[39m");
+                    Console.WriteLine("% Invalid input detected at '\x1B[91m^\x1B[39m' marker.");
                 }
             }
             else if (SplitCommand(cmd).Length != SplitCommand(_full).Length)
@@ -558,8 +556,8 @@ public sealed class CliCenter
                 {
                     Console.Write("".PadLeft(AnsiRegex.Replace(Prompt, "").Length));
                     Console.Write("".PadLeft(string.Join(" ", SplitCommand(cmd), 0, SplitCommand(_full).Length).Length + 1));
-                    Console.WriteLine("^");
-                    Console.WriteLine("% Invalid input detected at '^' marker.");
+                    Console.WriteLine("\x1B[91m^\x1B[39m");
+                    Console.WriteLine("% Invalid input detected at '\x1B[91m^\x1B[39m' marker.");
                 }
             }
             else
@@ -571,7 +569,21 @@ public sealed class CliCenter
                     if (cmd.EndsWith('?'))
                         HandleQuestionMark(cmd);
                     else if (cas.Count() == 1)
+                    {
+                        if (DebugMode)
+                        {
+                            Console.Write($"\x1B[90m[DEBUG]\x1B[39m Found Command: ");
+                            if (!fca.IsRegular)
+                                Console.Write($"\x1B[92m{fca.Command}\x1B[39m");
+                            else
+                                Console.Write($"\x1B[93m{fca.RegularHelp}\x1B[39m");
+                            if (!string.IsNullOrEmpty(fca.Tag))
+                                Console.WriteLine($"[{fca.Tag}]");
+                            else
+                                Console.WriteLine();
+                        }
                         InvokeCommandMethod(_full, fca);
+                    }
                     else
                     {
                         if (DebugMode)
@@ -588,9 +600,8 @@ public sealed class CliCenter
                 }
                 else
                 {
-                    Console.Write("".PadLeft(AnsiRegex.Replace(Prompt, "").Length));
-                    Console.WriteLine("^");
-                    Console.WriteLine("% Invalid input detected at '^' marker.");
+                    Console.WriteLine($"{"".PadLeft(AnsiRegex.Replace(Prompt, "").Length)}\x1B[91m^\x1B[39m");
+                    Console.WriteLine("% Invalid input detected at '\x1B[91m^\x1B[39m' marker.");
                 }
             }
             if (!cancellationToken.IsCancellationRequested)
@@ -633,7 +644,7 @@ public sealed class CliCenter
             try
             {
                 if (DebugMode)
-                    Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Executing \x1B[96m{fullCommand}\x1B[39m >> \x1B[93m{cmdAttr.Method.Name}\x1B[39m");
+                    Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Executing \x1B[94m{cmdAttr.Method.Name}\x1B[39m");
                 if (cmdAttr.Method.IsStatic)
                     cmdAttr.Method.Invoke(null, args);
                 else
@@ -644,14 +655,17 @@ public sealed class CliCenter
             }
             catch (TargetException)
             {
-                Console.WriteLine($"\x1B[91m[!]\x1B[39m 函示 \x1B[32m{cmdAttr.Method.Name}\x1B[39m 宣告錯誤!");
-                Console.WriteLine(cmdAttr.Method);
+                if (DebugMode)
+                    Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Method \x1B[32m{cmdAttr.Method.Name}\x1B[39m declares error!");
                 return false;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\x1B[91m[!]\x1B[39m 函示 \x1B[32m{cmdAttr.Method.Name}\x1B[39m 執行錯誤!");
-                Console.WriteLine(ex);
+                if (DebugMode)
+                {
+                    Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Method \x1B[32m{cmdAttr.Method.Name}\x1B[39m happend error!");
+                    Console.WriteLine(ex);
+                }
                 return false;
             }
             if (!OnAfterMethodExecute(cmdAttr, cmdAttr.Method)) return false;
@@ -717,15 +731,32 @@ public sealed class CliCenter
     /// <param name="cmd">欲綁定的指令。</param>
     private void SetChilds(CommandAttribute cmd)
     {
-        cmd.ClearChilds();
+        if (cmd.Command == "md5")
+            Console.Write("");
+        //cmd.ClearChilds();
         cmd.Level = (string.IsNullOrEmpty(cmd.Parent) ? 0 : SplitCommand(cmd.Parent).Length) + 1;
         string _pc = string.IsNullOrEmpty(cmd.Parent) ? cmd.Command : $"{cmd.Parent} {cmd.Command}";
-        foreach (CommandAttribute ca in _Commands.Where(_ca => !string.IsNullOrEmpty(_ca.Parent) && (Regex.IsMatch(_pc, $"^{_ca.Parent}$") || _pc == _ca.Parent) && _ca.Tag == cmd.Tag))
+        string[] fds = SplitCommand(cmd.FullCommand);
+
+        foreach (CommandAttribute ca in _Commands.Where(_Check))
         {
             if (!cmd.Childs.Contains(ca))
                 cmd.AddChild(ca);
             SetChilds(ca);
         }
+
+        #region Predicate Method : bool _Check(CommandAttribute _ca)
+        bool _Check(CommandAttribute _ca)
+        {
+            if (cmd.Tag != _ca.Tag || string.IsNullOrEmpty(_ca.Parent))
+                return false;
+            string[] _sc = SplitCommand(_ca.Parent);
+            if (fds.Length != _sc.Length) return false;
+            for (int i = 0; i < fds.Length; i++)
+                if (!Regex.IsMatch(fds[i], $"^{_sc[i]}$") && !Regex.IsMatch(_sc[i], $"^{fds[i]}$") && fds[i] != _sc[i]) return false;
+            return true;
+        }
+        #endregion
     }
     #endregion
 
@@ -935,10 +966,15 @@ public sealed class CliCenter
         Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Command Tree:");
         foreach (CommandAttribute ca in _Commands.Where(_c => string.IsNullOrEmpty(_c.Parent)))
         {
-            if (ca.Method is null)
-                Console.WriteLine($" \x1B[92m{ca.Command.PadRight(42)}\x1B[39m");
+            Console.Write($" \x1B[92m{ca.Command,-44}\x1B[39m");
+            if (string.IsNullOrEmpty(ca.Tag))
+                Console.Write($" {"",-15}");
             else
-                Console.WriteLine($" \x1B[92m{ca.Command.PadRight(42)}\x1B[39m > \x1B[94m{ca.Method?.Name}\x1B[39m");
+                Console.Write($" \x1B[96m{ca.Tag,-15}\x1B[39m");
+            if (ca.Method is null)
+                Console.WriteLine();
+            else
+                Console.WriteLine($" > \x1B[94m{ca.Method?.Name}\x1B[39m");
             _PrintCommandTree(ca);
         }
     }
@@ -947,12 +983,19 @@ public sealed class CliCenter
     #region Private Method : void _PrintCommandTree(CommandAttribute cmd)
     private void _PrintCommandTree(CommandAttribute cmd)
     {
+        int sPos, cmdSpace;
         foreach (CommandAttribute ca in cmd.Childs)
         {
+            sPos = (ca.Level - 1) * 2;
+            cmdSpace = 45 - 3 - sPos;
             if (ca.IsRegular)
-                Console.Write($" {"".PadLeft((ca.Level - 1) * 2)}+ \x1B[93m{ca.RegularHelp.PadRight(40 - (ca.Level - 1) * 2)}\x1B[39m");
+                Console.Write($" {"".PadLeft(sPos)}+ \x1B[93m{ca.RegularHelp.PadRight(cmdSpace)}\x1B[39m");
             else
-                Console.Write($" {"".PadLeft((ca.Level - 1) * 2)}+ \x1B[92m{ca.Command.PadRight(40 - (ca.Level - 1) * 2)}\x1B[39m");
+                Console.Write($" {"".PadLeft(sPos)}+ \x1B[92m{ca.Command.PadRight(cmdSpace)}\x1B[39m");
+            if (string.IsNullOrEmpty(ca.Tag))
+                Console.Write($" {"",-15}");
+            else
+                Console.Write($" \x1B[96m{ca.Tag,-15}\x1B[39m");
             if (ca.Method is null)
                 Console.WriteLine();
             else
