@@ -123,8 +123,8 @@ public sealed class CliCenter
     #region Private Variables
     private static readonly Regex QuotesRegex = new("(\"[^\"]*\"|'[^']*')");
     private static readonly Regex AnsiRegex = new(ANSI_PATTERN);
-    //private readonly Dictionary<CommandAttribute, MethodInfo> _items;
     private readonly List<CommandAttribute> _Commands;
+    private readonly TimeSpan Pause = TimeSpan.FromSeconds(1);
     private Func<string, int, string[]?>? _CommandSuggestions;
     private Task? _executeTask;
     private CancellationTokenSource? _cancellationTokenSource;
@@ -148,27 +148,29 @@ public sealed class CliCenter
     }
     #endregion
 
-    #region Public Construct Method : CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null, bool debug = false)
+    #region Public Construct Method : CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null, bool debug = false, int pause = 1000)
     /// <summary>建立新的 <see cref="CliCenter"/> 執行個體。</summary>
     /// <param name="prompt">指令提示字串。</param>
     /// <param name="promptColor">指令提示字串顏色。</param>
     /// <param name="historyPool">歷史指令清單的分類字串，預設值為 <see cref="DEFAULT_POOL"/>。</param>
     /// <param name="pwdChar">密碼顯示字元。</param>
     /// <param name="debug">是否啟用除錯模式。</param>
-    public CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null, bool debug = false) : this()
+    /// <param name="pause">開始前暫停的時間，單位豪秒。</param>
+    public CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null, bool debug = false, int pause = 1000) : this()
     {
         Prompt = prompt;
         HistoryPool = historyPool;
         PromptColor = promptColor ?? Console.ForegroundColor;
         PasswordChar = Reader.PasswordChar = pwdChar;
         DebugMode = debug;
+        Pause = TimeSpan.FromMilliseconds(pause);
     }
     #endregion
 
     #region Internal Construct Method : CliCenter(CliOptions opts)
     /// <summary>建立新的 <see cref="CliCenter"/> 執行個體，本建立式僅供 <see cref="CliHostedService"/> 使用。</summary>
     /// <param name="opts">供 <see cref="CliHostedService"/> 傳遞用的設定類別。</param>
-    internal CliCenter(CliOptions opts) : this(opts.Prompt, opts.PromptColor, opts.HistoryPool, opts.PasswordChar, opts.DebugMode) { }
+    internal CliCenter(CliOptions opts) : this(opts.Prompt, opts.PromptColor, opts.HistoryPool, opts.PasswordChar, opts.DebugMode, opts.Pause) { }
     #endregion
 
 
@@ -523,6 +525,8 @@ public sealed class CliCenter
     /// <summary>指令等待背景執行緒。</summary>
     internal Task WorkerProcess(CancellationToken cancellationToken)
     {
+        if (Pause.TotalMilliseconds > 0)
+            Task.Delay(Pause, cancellationToken).Wait(cancellationToken);
         string? _full;
         ConsoleColor _OrigColor = Console.ForegroundColor;
         string cmd = Reader.Read(Prompt, PromptColor).Trim();

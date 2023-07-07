@@ -29,6 +29,8 @@ public sealed class CliOptions
     public char? PasswordChar { get; set; }
     /// <summary>設定或取得是否啟用除錯模式。</summary>
     public bool DebugMode { get; set; } = false;
+    /// <summary>開始輸入前等待的時間，單位豪秒，預設為 1000 豪秒。</summary>
+    public int Pause { get; set; } = 1000;
 }
 #endregion
 

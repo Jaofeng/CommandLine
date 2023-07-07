@@ -5,10 +5,8 @@
 
 
 ## 當前版本
-2023-07-06 - v1.33.740
-1. 優化內建的正規表示式規則
-2. 優化指令層級並加強指令彈性
-3. 增加 DebugMode 顯示訊息，並於程式執行後，以樹狀結構顯示指令與其對應之函示名
+2023-07-07 - v1.33.745
+1. 新增 Pause 選項屬性，可指定開始輸入前暫停的時間，預設 1 秒。
 
 ## 引用宣告
 本 `CJF.CommandLine` 部分原始碼來自 [Github](https://github.com/) [tonerdo/readline](https://github.com/tonerdo/readline/tree/master) 專案
@@ -46,6 +44,8 @@ public sealed class CliOptions
     public char? PasswordChar { get; set; }
     /// <summary>設定或取得是否啟用除錯模式。</summary>
     public bool DebugMode { get; set; } = false;
+    /// <summary>開始輸入前等待的時間，單位豪秒，預設為 1000 豪秒。</summary>
+    public int Pause { get; set; } = 1000;
 }
 ```
 
@@ -283,6 +283,11 @@ partial class Program
 
 ---
 ## 歷史版本紀錄
+2023-07-06 - v1.33.740
+1. 優化內建的正規表示式規則
+2. 優化指令層級並加強指令彈性
+3. 增加 DebugMode 顯示訊息，並於程式執行後，以樹狀結構顯示指令與其對應之函示名
+
 2023-06-27 - v1.32.725
 1. 新增除錯模式，於 `CliOptions` 中設定；設定後，會在指令執行前顯示完整指令以及執行的函示名稱。
 2. 檢驗時，遇到兩個以上模糊曖昧的規則時，預設會執行第一個非正規表示式的規則，但最好避免此種狀況。
