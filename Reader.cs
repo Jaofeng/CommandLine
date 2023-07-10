@@ -76,17 +76,6 @@ static class Reader
                 // 2021/05/19 : 歷史紀錄為空、輸入的命令不在歷史紀錄內或者最後一筆紀錄不和輸入的命令相同
                 if (_HistoryPool[PoolName].Count == 0 || !exists || _HistoryPool[PoolName].Last() != text)
                     _HistoryPool[PoolName].Add(text);
-                //if (_HistoryPool[PoolName].Count == 0 || !exists)
-                //{
-                //    // 2021/05/19 : 歷史紀錄為空、輸入的命令不在歷史紀錄內則新增到歷史紀錄中
-                //    _HistoryPool[PoolName].Add(text);
-                //}
-                //else if (_HistoryPool[PoolName].Last() != text)
-                //{
-                //    // 2021/05/19 : 最後一筆紀錄不和輸入的命令相同，則刪除最後一筆紀錄，並新增到歷史紀錄中
-                //    _HistoryPool[PoolName].Remove(text);
-                //    _HistoryPool[PoolName].Add(text);
-                //}
             }
         }
 
