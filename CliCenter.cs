@@ -109,22 +109,22 @@ public sealed class CliCenter
     /// <summary>設定或取得目前使用的分類標籤字串。</summary>
     public string UseTag { get; set; } = string.Empty;
     /// <summary>設定或取得歷史指令清單的分類名稱。</summary>
-#pragma warning disable CA1822 // Mark members as static
     public string HistoryPool
     {
         get => Reader.PoolName;
         set => Reader.SetPool(value);
     }
-#pragma warning restore CA1822 // Mark members as static
     /// <summary>取得目前當下正在執行的指令。</summary>
     public CommandAttribute? ExecutingCommand { get; private set; }
+    /// <summary>取得或設定是否暫停輸入指令。</summary>
+    public bool Pause { get; set; } = false;
     #endregion
 
     #region Private Variables
     private static readonly Regex QuotesRegex = new("(\"[^\"]*\"|'[^']*')");
     private static readonly Regex AnsiRegex = new(ANSI_PATTERN);
     private readonly List<CommandAttribute> _Commands;
-    private readonly TimeSpan Pause = TimeSpan.FromSeconds(1);
+    private readonly TimeSpan Delay = TimeSpan.FromSeconds(1);
     private Func<string, int, string[]?>? _CommandSuggestions;
     private Task? _executeTask;
     private CancellationTokenSource? _cancellationTokenSource;
@@ -148,29 +148,29 @@ public sealed class CliCenter
     }
     #endregion
 
-    #region Public Construct Method : CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null, bool debug = false, int pause = 1000)
+    #region Public Construct Method : CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null, bool debug = false, int delay = 1000)
     /// <summary>建立新的 <see cref="CliCenter"/> 執行個體。</summary>
     /// <param name="prompt">指令提示字串。</param>
     /// <param name="promptColor">指令提示字串顏色。</param>
     /// <param name="historyPool">歷史指令清單的分類字串，預設值為 <see cref="DEFAULT_POOL"/>。</param>
     /// <param name="pwdChar">密碼顯示字元。</param>
     /// <param name="debug">是否啟用除錯模式。</param>
-    /// <param name="pause">開始前暫停的時間，單位豪秒。</param>
-    public CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null, bool debug = false, int pause = 1000) : this()
+    /// <param name="delay">延遲開始輸入的時間，單位豪秒。</param>
+    public CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null, bool debug = false, int delay = 1000) : this()
     {
         Prompt = prompt;
         HistoryPool = historyPool;
         PromptColor = promptColor ?? Console.ForegroundColor;
         PasswordChar = Reader.PasswordChar = pwdChar;
         DebugMode = debug;
-        Pause = TimeSpan.FromMilliseconds(pause);
+        Delay = TimeSpan.FromMilliseconds(delay);
     }
     #endregion
 
     #region Internal Construct Method : CliCenter(CliOptions opts)
     /// <summary>建立新的 <see cref="CliCenter"/> 執行個體，本建立式僅供 <see cref="CliHostedService"/> 使用。</summary>
     /// <param name="opts">供 <see cref="CliHostedService"/> 傳遞用的設定類別。</param>
-    internal CliCenter(CliOptions opts) : this(opts.Prompt, opts.PromptColor, opts.HistoryPool, opts.PasswordChar, opts.DebugMode, opts.Pause) { }
+    internal CliCenter(CliOptions opts) : this(opts.Prompt, opts.PromptColor, opts.HistoryPool, opts.PasswordChar, opts.DebugMode, opts.Delay) { }
     #endregion
 
 
@@ -525,16 +525,24 @@ public sealed class CliCenter
     /// <summary>指令等待背景執行緒。</summary>
     internal Task WorkerProcess(CancellationToken cancellationToken)
     {
-        if (Pause.TotalMilliseconds > 0)
-            Task.Delay(Pause, cancellationToken).Wait(cancellationToken);
+        if (Delay.TotalMilliseconds > 0)
+            Task.Delay(Delay, cancellationToken).Wait(cancellationToken);
+        while (!cancellationToken.IsCancellationRequested && Pause)
+            Task.Delay(100, cancellationToken).Wait(cancellationToken);
+        if (cancellationToken.IsCancellationRequested)
+            return Task.CompletedTask;
+
         string? _full;
         ConsoleColor _OrigColor = Console.ForegroundColor;
         string cmd = Reader.Read(Prompt, PromptColor).Trim();
-
         while (!cancellationToken.IsCancellationRequested)
         {
             if (string.IsNullOrWhiteSpace(cmd))
             {
+                while (!cancellationToken.IsCancellationRequested && Pause)
+                    Task.Delay(100, cancellationToken).Wait(cancellationToken);
+                if (cancellationToken.IsCancellationRequested)
+                    break;
                 cmd = Reader.Read(Prompt, PromptColor).Trim();
                 continue;
             }
@@ -610,6 +618,16 @@ public sealed class CliCenter
             }
             if (!cancellationToken.IsCancellationRequested)
             {
+                if (Pause)
+                {
+                    while (!cancellationToken.IsCancellationRequested && Pause)
+                        Task.Delay(100, cancellationToken).Wait(cancellationToken);
+                    if (cancellationToken.IsCancellationRequested)
+                        break;
+                    // 清除輸入緩衝區
+                    while (Console.KeyAvailable)
+                        Console.ReadKey(true);
+                }
                 if (cmd.EndsWith('?'))
                     cmd = Reader.Read(Prompt, PromptColor, cmd.Remove(cmd.Length - 1)).Trim();
                 else
