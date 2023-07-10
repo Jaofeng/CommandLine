@@ -5,8 +5,9 @@
 
 
 ## 當前版本
-2023-07-07 - v1.33.745
-1. 新增 Pause 選項屬性，可指定開始輸入前暫停的時間，預設 1 秒。
+2023-07-10 - v1.33.752
+1. 新增 `Delay` 選項屬性，可指定開始輸入前暫停的時間，預設 `1` 秒。
+2. 新增 `Pause` 屬性，設定為 `true` 時，將無法輸入，直到變更為 `false` 。
 
 ## 引用宣告
 本 `CJF.CommandLine` 部分原始碼來自 [Github](https://github.com/) [tonerdo/readline](https://github.com/tonerdo/readline/tree/master) 專案
@@ -44,8 +45,8 @@ public sealed class CliOptions
     public char? PasswordChar { get; set; }
     /// <summary>設定或取得是否啟用除錯模式。</summary>
     public bool DebugMode { get; set; } = false;
-    /// <summary>開始輸入前等待的時間，單位豪秒，預設為 1000 豪秒。</summary>
-    public int Pause { get; set; } = 1000;
+    /// <summary>開始輸入前延遲的時間，單位豪秒，預設為 1000 豪秒。</summary>
+    public int Delay { get; set; } = 1000;
 }
 ```
 
@@ -215,7 +216,7 @@ partial class Program
 	}
 }
 ```
-為加快指令尋找、比對時間，建議可使用 `RebindLinkRelationship` 方法重新建立指令的連結關係。
+為加快指令尋找、比對的正確性，請使用 `RebindLinkRelationship` 方法重新建立指令的連結關係。
 
 ``` C#
 // File Name : _CLI.cs
