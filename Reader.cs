@@ -65,21 +65,28 @@ static class Reader
         _HistoryPool.TryGetValue(PoolName, out List<string>? pool);
         var keyHandler = new KeyHandler(new Console2(), pool, AutoCompletionHandler);
         _Stop = false;
-        string text = GetText(keyHandler, @default);
-        if (text.EndsWith('\x1B'))
-            return Read(prompt, promptColor, text.TrimEnd('\x1B'));
-        else
+        try
         {
-            if (!string.IsNullOrWhiteSpace(text) && HistoryEnabled && _HistoryPool.ContainsKey(PoolName))
+            string text = GetText(keyHandler, @default);
+            if (text.EndsWith('\x1B'))
+                return Read(prompt, promptColor, text.TrimEnd('\x1B'));
+            else
             {
-                var exists = _HistoryPool[PoolName].Exists(x => x == text);
-                // 2021/05/19 : 歷史紀錄為空、輸入的命令不在歷史紀錄內或者最後一筆紀錄不和輸入的命令相同
-                if (_HistoryPool[PoolName].Count == 0 || !exists || _HistoryPool[PoolName].Last() != text)
-                    _HistoryPool[PoolName].Add(text);
+                if (!string.IsNullOrWhiteSpace(text) && HistoryEnabled && _HistoryPool.ContainsKey(PoolName))
+                {
+                    var exists = _HistoryPool[PoolName].Exists(x => x == text);
+                    // 2021/05/19 : 歷史紀錄為空、輸入的命令不在歷史紀錄內或者最後一筆紀錄不和輸入的命令相同
+                    if (_HistoryPool[PoolName].Count == 0 || !exists || _HistoryPool[PoolName].Last() != text)
+                        _HistoryPool[PoolName].Add(text);
+                }
             }
+            return text;
         }
-
-        return text;
+        catch(Exception ex)
+        {
+            Console.WriteLine($"\x1B[91m !!! \x1B[39m [{nameof(CliCenter)}] {ex.Message}");
+            return string.Empty;
+        }
     }
     #endregion
 

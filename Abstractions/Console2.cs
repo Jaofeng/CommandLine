@@ -24,6 +24,8 @@ internal sealed class Console2 : IConsole
 
     public void SetCursorPosition(int left, int top)
     {
+        left = Math.Max(0, left);
+        top = Math.Max(0, top);
         if (!PasswordMode)
             Console.SetCursorPosition(left, top);
     }
