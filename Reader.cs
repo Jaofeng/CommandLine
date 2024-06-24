@@ -82,7 +82,7 @@ static class Reader
             }
             return text;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Console.WriteLine($"\x1B[91m !!! \x1B[39m [{nameof(CliCenter)}] {ex.Message}");
             return string.Empty;
@@ -139,12 +139,19 @@ static class Reader
         ConsoleKeyInfo keyInfo = Console.ReadKey(true);
         while (!_Stop && keyInfo.Key != ConsoleKey.Enter)
         {
-            keyHandler.Handle(keyInfo);
-            if (keyInfo.KeyChar == '?') break;
-            else if (keyInfo.Key == ConsoleKey.Tab && keyHandler.IsMultiAutoCompleteResult())
-                return keyHandler.Text + '\x1B';
-            else
+            try
+            {
+                keyHandler.Handle(keyInfo);
+                if (keyInfo.KeyChar == '?') break;
+                else if (keyInfo.Key == ConsoleKey.Tab && keyHandler.IsMultiAutoCompleteResult())
+                    return keyHandler.Text + '\x1B';
+                else
+                    keyInfo = Console.ReadKey(true);
+            }
+            catch
+            {
                 keyInfo = Console.ReadKey(true);
+            }
         }
 
         Console.WriteLine();
