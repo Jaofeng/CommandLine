@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.Versioning;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace CJF.CommandLine;
@@ -271,8 +272,21 @@ public sealed class CliCenter
     /// <exception cref="CommandDuplicateException">指令重複。</exception>
     public void Append(CommandAttribute cmd, MethodInfo method)
     {
-        if (_Commands.Find(_ca => _ca.Match(cmd)) is null)
+        if (_Commands.Find(_ca => _ca.Match(cmd)) is CommandAttribute ca)
         {
+            // Exists
+            MethodInfo _m = ca.Method!;
+            StringBuilder sb = new();
+            sb.AppendLine($"Command is duplicate, please check setting again!!");
+            sb.AppendLine($"  Command   : {cmd.Command}");
+            sb.AppendLine($"  Parent    : {cmd.Parent}");
+            sb.AppendLine($"  Existed   : {_m.Name} @ {_m.DeclaringType!.FullName}");
+            sb.AppendLine($"  Duplicate : {method.Name} @ {method.DeclaringType!.FullName}");
+            throw new CommandDuplicateException(cmd, method, sb.ToString());
+        }
+        else
+        {
+            // Not Exists
             if (cmd.IsRegular && string.IsNullOrEmpty(cmd.RegularHelp))
             {
                 if (method.DeclaringType is not null)
@@ -285,13 +299,6 @@ public sealed class CliCenter
                 cmd.Method = method;
                 _Commands.Add(cmd);
             }
-        }
-        else
-        {
-            if (method.DeclaringType is not null)
-                throw new CommandDuplicateException($"\"{cmd.Command}\" is duplicate in methodInfo \"{method.Name}\" from \"{method.DeclaringType.FullName}\"");
-            else
-                throw new CommandDuplicateException($"\"{cmd.Command}\" is duplicate in methodInfo \"{method.Name}\"");
         }
     }
     #endregion
