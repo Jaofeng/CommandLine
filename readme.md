@@ -5,8 +5,8 @@
 
 
 ## 當前版本
-2024-06-24 - v1.34.780
-1. 修正特定指令重複定義時會發生錯誤的問題。
+2024-06-27 - v1.35.793
+1. 修正無法過濾標籤(UseTag)的問題。
 
 ## 引用宣告
 本 `CJF.CommandLine` 部分原始碼來自 [Github](https://github.com/) [tonerdo/readline](https://github.com/tonerdo/readline/tree/master) 專案
@@ -283,6 +283,9 @@ partial class Program
 
 ---
 ## 歷史版本紀錄
+2024-06-24 - v1.34.780
+1. 修正特定指令重複定義時會發生錯誤的問題。
+
 2023-07-16 - v1.33.762
 1. 修正訊息輸出時，按上下鍵時會產生錯誤而中斷執行的問題。
 

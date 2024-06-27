@@ -454,26 +454,27 @@ public sealed class CliCenter
     /// <param name="subCmd">子指令。</param>
     public void ShowHelp(string command, string subCmd = "")
     {
-        if (!TryGetCommand(command, out CommandAttribute? cca) || cca is null)
-        {
-            if (GetCommands(command).Any())
-                Console.WriteLine($"% Ambiguous command: \"{command} {(string.IsNullOrEmpty(subCmd) ? "" : subCmd.TrimEnd('?'))}\"");
-            else
-                Console.WriteLine($"% Unknow command: \"{command} {(string.IsNullOrEmpty(subCmd) ? "" : subCmd.TrimEnd('?'))}\"");
-            Console.WriteLine("");
-            return;
-        }
+        CommandAttribute? cca = null;
+        IEnumerable<CommandAttribute>? _cas = null;
 
-        IEnumerable<CommandAttribute> _cas;
         if (string.IsNullOrEmpty(command))
         {
             if (string.IsNullOrEmpty(UseTag))
                 _cas = _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && string.IsNullOrEmpty(_ca.Tag));
             else
-                _cas = _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && (string.IsNullOrEmpty(_ca.Tag) || _ca.Tag == UseTag));
+                _cas = _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) &&  _ca.Tag == UseTag);
+        }
+        else if (!TryGetCommand(command, out cca))
+        {
+            if (GetCommands(command).Any())
+                Console.WriteLine($"% Ambiguous command: \"{command}{(string.IsNullOrEmpty(subCmd) ? "" : " " + subCmd.TrimEnd('?'))}\"");
+            else
+                Console.WriteLine($"% Unknow command: \"{command}{(string.IsNullOrEmpty(subCmd) ? "" : " " + subCmd.TrimEnd('?'))}\"");
+            Console.WriteLine("");
+            return;
         }
         else if (string.IsNullOrEmpty(subCmd))
-            _cas = cca.Childs;
+            _cas = cca!.Childs;
         else
             _cas = GetChildCommands(cca, subCmd);
         int _m = 15;
@@ -489,7 +490,7 @@ public sealed class CliCenter
                     Console.WriteLine($"  {ca.Command.PadRight(_m + 5)}{ca.HelpText}");
             }
         }
-        if (!string.IsNullOrEmpty(command) && !cca.Childs.Any(_c => _c.Required))
+        if (!string.IsNullOrEmpty(command) && !cca!.Childs.Any(_c => _c.Required))
             Console.WriteLine($"  {"<cr>".PadRight(_m + 5)}<cr>");
         Console.WriteLine();
     }
@@ -721,7 +722,6 @@ public sealed class CliCenter
             string[]? _cs = null;
             if (_CommandSuggestions is not null)
             {
-                //_cs = _CommandSuggestions.Invoke(text.Substring(0, text.Length - 1), 0);
                 _cs = _CommandSuggestions.Invoke(text[..^1], 0);
             }
             if (_cs is null || _cs.Length == 0)
@@ -803,7 +803,7 @@ public sealed class CliCenter
             if (string.IsNullOrEmpty(UseTag))
                 ca = _Commands.FirstOrDefault(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && string.IsNullOrEmpty(_ca.Tag));
             else
-                ca = _Commands.FirstOrDefault(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && (string.IsNullOrEmpty(_ca.Tag) || _ca.Tag == UseTag));
+                ca = _Commands.FirstOrDefault(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && _ca.Tag == UseTag);
             if (ca is not null) cmd = ca;
         }
         else
@@ -862,7 +862,7 @@ public sealed class CliCenter
             if (string.IsNullOrEmpty(UseTag))
                 lca.AddRange(_Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && string.IsNullOrEmpty(_ca.Tag)));
             else
-                lca.AddRange(_Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && (string.IsNullOrEmpty(_ca.Tag) || _ca.Tag == UseTag)));
+                lca.AddRange(_Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && _ca.Tag == UseTag));
         }
         else
         {
