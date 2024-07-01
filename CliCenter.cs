@@ -25,6 +25,10 @@ public sealed class CliCenter
     public const string UINT16_REGEX = @"(\d{1,4}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])";
     /// <summary>INT16 數字檢查式。</summary>
     public const string INT16_REGEX = @"(-?(\d{0,4}|[0-2]\d{4}|31\d{3}|3276[0-7])|-32768)";
+    /// <summary>UINT8 數字檢查式。</summary>
+    public const string SBYTE_REGEX = @"(-?(\d{0,2}|1[0-1]\d|12[0-7])|-128)";
+    /// <summary>BYTE 數字檢查式。</summary>
+    public const string BYTE_REGEX = @"(\d{1,2}|1\d{2}|2[0-4]\d|25[0-5])";
     /// <summary>16 進位字串檢查式。</summary>
     public const string HEX_REGEX = @"[0-9a-fA-F]+";
     /// <summary>1 位元組的 16 進位字串檢查式。</summary>
@@ -119,6 +123,25 @@ public sealed class CliCenter
     public CommandAttribute? ExecutingCommand { get; private set; }
     /// <summary>取得或設定是否暫停輸入指令。</summary>
     public bool Pause { get; set; } = false;
+    /// <summary>取得或設定是否忽略大小寫。</summary>
+    public bool IgnoreCase
+    {
+        get => _IgnoreCase;
+        set
+        {
+            if (value)
+            {
+                stringComparison = StringComparison.OrdinalIgnoreCase;
+                regexOptions = RegexOptions.IgnoreCase;
+            }
+            else
+            {
+                stringComparison = StringComparison.Ordinal;
+                regexOptions = RegexOptions.None;
+            }
+            _IgnoreCase = value;
+        }
+    }
     #endregion
 
     #region Private Variables
@@ -129,6 +152,9 @@ public sealed class CliCenter
     private Func<string, int, string[]?>? _CommandSuggestions;
     private Task? _executeTask;
     private CancellationTokenSource? _cancellationTokenSource;
+    private bool _IgnoreCase = false;
+    private StringComparison stringComparison = StringComparison.Ordinal;
+    private RegexOptions regexOptions = RegexOptions.None;
     #endregion
 
 
@@ -157,7 +183,8 @@ public sealed class CliCenter
     /// <param name="pwdChar">密碼顯示字元。</param>
     /// <param name="debug">是否啟用除錯模式。</param>
     /// <param name="delay">延遲開始輸入的時間，單位豪秒。</param>
-    public CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null, bool debug = false, int delay = 1000) : this()
+    /// <param name="ignoreCase">是否忽略大小寫。</param>
+    public CliCenter(string prompt, ConsoleColor? promptColor = null, string historyPool = DEFAULT_POOL, char? pwdChar = null, bool debug = false, int delay = 1000, bool ignoreCase = false) : this()
     {
         Prompt = prompt;
         HistoryPool = historyPool;
@@ -165,13 +192,14 @@ public sealed class CliCenter
         PasswordChar = Reader.PasswordChar = pwdChar;
         DebugMode = debug;
         Delay = TimeSpan.FromMilliseconds(delay);
+        IgnoreCase = ignoreCase;
     }
     #endregion
 
     #region Internal Construct Method : CliCenter(CliOptions opts)
     /// <summary>建立新的 <see cref="CliCenter"/> 執行個體，本建立式僅供 <see cref="CliHostedService"/> 使用。</summary>
     /// <param name="opts">供 <see cref="CliHostedService"/> 傳遞用的設定類別。</param>
-    internal CliCenter(CliOptions opts) : this(opts.Prompt, opts.PromptColor, opts.HistoryPool, opts.PasswordChar, opts.DebugMode, opts.Delay) { }
+    internal CliCenter(CliOptions opts) : this(opts.Prompt, opts.PromptColor, opts.HistoryPool, opts.PasswordChar, opts.DebugMode, opts.Delay, opts.IgnoreCase) { }
     #endregion
 
 
@@ -389,7 +417,7 @@ public sealed class CliCenter
             if (string.IsNullOrWhiteSpace(s)) continue;
             if (string.IsNullOrEmpty(res))
             {
-                var _cas = _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(s));
+                var _cas = _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(s, stringComparison));
                 if (!_cas.Any()) return null;
                 cmd = _cas.First();
                 res = cmd.Command;
@@ -400,7 +428,7 @@ public sealed class CliCenter
                 bool _FindChild(CommandAttribute ca)
                 {
                     if (string.IsNullOrEmpty(ca.Parent)) return false;
-                    return ca.IsRegular && Regex.IsMatch(s, $"^{ca.Command}$") || !ca.IsRegular && ca.Command.StartsWith(s);
+                    return ca.IsRegular && Regex.IsMatch(s, $"^{ca.Command}$", regexOptions) || !ca.IsRegular && ca.Command.StartsWith(s, stringComparison);
                 }
                 #endregion
 
@@ -429,8 +457,7 @@ public sealed class CliCenter
     public CommandAttribute? GetParentCommand(CommandAttribute command)
     {
         if (string.IsNullOrEmpty(command.Parent)) return null;
-        //return _items.Keys.FirstOrDefault(_ca => _ca.FullCommand == command.Parent);
-        return _Commands.FirstOrDefault(_ca => _ca.FullCommand == command.Parent);
+        return _Commands.FirstOrDefault(_ca => _ca.FullCommand.Equals(command.Parent, stringComparison));
     }
     #endregion
 
@@ -459,13 +486,15 @@ public sealed class CliCenter
 
         if (string.IsNullOrEmpty(command))
         {
+            // 第一層指令
             if (string.IsNullOrEmpty(UseTag))
                 _cas = _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && string.IsNullOrEmpty(_ca.Tag));
             else
-                _cas = _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) &&  _ca.Tag == UseTag);
+                _cas = _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Tag == UseTag);
         }
         else if (!TryGetCommand(command, out cca))
         {
+            // 找不到特定指令
             if (GetCommands(command).Any())
                 Console.WriteLine($"% Ambiguous command: \"{command}{(string.IsNullOrEmpty(subCmd) ? "" : " " + subCmd.TrimEnd('?'))}\"");
             else
@@ -476,7 +505,7 @@ public sealed class CliCenter
         else if (string.IsNullOrEmpty(subCmd))
             _cas = cca!.Childs;
         else
-            _cas = GetChildCommands(cca, subCmd);
+            _cas = GetChildCommands(cca!, subCmd, true);
         int _m = 15;
         if (_cas is not null && _cas.FirstOrDefault() is not null)
         {
@@ -524,7 +553,7 @@ public sealed class CliCenter
     #region Public Method : string ReadPassword(string prompt)
     /// <summary>讀取密碼。</summary>
     /// <param name="prompt">提示文字。</param>
-    /// <returns>使用者輸入的密碼。
+    /// <returns>使用者輸入的密碼。</returns>
     public string ReadPassword(string prompt) => Reader.ReadPassword(prompt, PasswordChar);
     #endregion
 
@@ -557,11 +586,14 @@ public sealed class CliCenter
             OnCommandEntered(cmd);
             _full = AnalyzeToFullCommand(cmd);
             if (DebugMode)
-                Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Full Command: \x1B[92m{_full}\x1B[39m");
+                Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Full Command : \x1B[92m{_full}\x1B[39m");
             if (_full is null)
             {
-                if (cmd.EndsWith('?'))
+                if (cmd.EndsWith("?"))
+                {
+                    // ? / s?
                     HandleQuestionMark(cmd);
+                }
                 else
                 {
                     Console.WriteLine($"{"".PadLeft(AnsiRegex.Replace(Prompt, "").Length)}\x1B[91m^\x1B[39m");
@@ -582,7 +614,7 @@ public sealed class CliCenter
             }
             else
             {
-                IEnumerable<CommandAttribute> cas = GetCommands(cmd);
+                IEnumerable<CommandAttribute> cas = GetCommands(_full);
                 if (cas.Any())
                 {
                     CommandAttribute fca = cas.First();
@@ -610,13 +642,23 @@ public sealed class CliCenter
                         {
                             Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Ambiguous command: \"\x1B[96m{cmd}\x1B[39m\"");
                             foreach (CommandAttribute _ca in cas)
-                                Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m   \x1B[96m{_ca.FullCommand}\x1B[39m  >>  \x1B[93m{_ca.Method!.Name}\x1B[39m");
+                            {
+                                StringBuilder sb = new StringBuilder(); 
+                                CommandAttribute? _p = GetParentCommand(_ca);
+                                while (_p is not null)
+                                {
+                                    if (_p.IsRegular)
+                                        sb.Insert(0, $"{_p.RegularHelp} ");
+                                    else
+                                        sb.Insert(0, $"{_p.Command} ");
+                                    _p = GetParentCommand(_p);
+                                }
+                                Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m   \x1B[93m{sb}\x1B[39m  >>  \x1B[96m{_ca.Method!.Name}\x1B[39m");
+                            }
                         }
-                        if (cas.FirstOrDefault(_ca => !_ca.IsRegular) is CommandAttribute ca)
-                            InvokeCommandMethod(_full, ca);
-                        else
-                            Console.WriteLine($"% Ambiguous command: \"\x1B[96m{cmd}\x1B[39m\"");
+                        Console.WriteLine($"% Ambiguous command: \"\x1B[93m{cmd}\x1B[39m\"");
                     }
+
                 }
                 else
                 {
@@ -674,7 +716,7 @@ public sealed class CliCenter
             try
             {
                 if (DebugMode)
-                    Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Executing \x1B[94m{cmdAttr.Method.Name}\x1B[39m");
+                    Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Executing    : \x1B[94m{cmdAttr.Method.Name}\x1B[39m");
                 if (cmdAttr.Method.IsStatic)
                     cmdAttr.Method.Invoke(null, args);
                 else
@@ -708,7 +750,7 @@ public sealed class CliCenter
 
     #region Private Method : void HandleQuestionMark(string text)
     /// <summary>處理問號符號(?)。</summary>
-    /// <param name="text">當前輸入的完整指令字串。</param>
+    /// <param name="text">當前輸入的完整指令字串，或字尾帶 "?" 的命令。</param>
     private void HandleQuestionMark(string text)
     {
         // Show Help or commands
@@ -782,7 +824,7 @@ public sealed class CliCenter
             string[] _sc = SplitCommand(_ca.Parent);
             if (fds.Length != _sc.Length) return false;
             for (int i = 0; i < fds.Length; i++)
-                if (!Regex.IsMatch(fds[i], $"^{_sc[i]}$") && !Regex.IsMatch(_sc[i], $"^{fds[i]}$") && fds[i] != _sc[i]) return false;
+                if (!Regex.IsMatch(fds[i], $"^{_sc[i]}$", regexOptions) && !Regex.IsMatch(_sc[i], $"^{fds[i]}$", regexOptions) && fds[i] != _sc[i]) return false;
             return true;
         }
         #endregion
@@ -791,7 +833,7 @@ public sealed class CliCenter
 
     #region Private Method : CommandAttribute? GetCommand(string command)
     /// <summary>以指令字串取得指令類別。</summary>
-    /// <param name="command">CLI 指令字串。</param>
+    /// <param name="command">CLI 指令，可使用縮寫指令。</param>
     /// <returns>找到的指令類別，否則為 null。</returns>
     private CommandAttribute? GetCommand(string command)
     {
@@ -800,11 +842,21 @@ public sealed class CliCenter
         if (!command.Contains(' '))
         {
             CommandAttribute? ca;
-            if (string.IsNullOrEmpty(UseTag))
-                ca = _Commands.FirstOrDefault(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && string.IsNullOrEmpty(_ca.Tag));
+            IEnumerable<CommandAttribute> _cas = GetCommands(command);
+            if (_cas.Count() == 1 && _cas.First() is not null)
+                cmd = _cas.First();
             else
-                ca = _Commands.FirstOrDefault(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && _ca.Tag == UseTag);
-            if (ca is not null) cmd = ca;
+            {
+                ca = _cas.FirstOrDefault(_ca => !_ca.IsRegular && _ca.Command.Equals(command, stringComparison));
+                if (ca is not null)
+                    cmd = ca;
+                else
+                {
+                    ca = _cas.FirstOrDefault(_ca => _ca.IsRegular && Regex.IsMatch(command, $"^{_ca.Command}$", regexOptions));
+                    if (ca is not null)
+                        cmd = ca;
+                }
+            }
         }
         else
         {
@@ -815,10 +867,10 @@ public sealed class CliCenter
             CommandAttribute[] cas;
             while (idx < _cs.Length)
             {
-                cas = GetChildCommands(pca, _cs[idx]).ToArray();
+                cas = GetChildCommands(pca, _cs[idx], false).ToArray();
                 if (cas.Length != 1)
                 {
-                    CommandAttribute[] _cas = cas.Where(_ca => !_ca.IsRegular && _ca.Command.StartsWith(_cs[idx])).ToArray();
+                    CommandAttribute[] _cas = cas.Where(_ca => !_ca.IsRegular && _ca.Command.StartsWith(_cs[idx], stringComparison)).ToArray();
                     if (_cas.Length == 1)
                     {
                         pca = _cas[0];
@@ -827,7 +879,7 @@ public sealed class CliCenter
                     }
                     else if (_cas.Length == 0)
                     {
-                        _cas = cas.Where(_ca => _ca.IsRegular && Regex.IsMatch(_cs[idx], $"^{_ca.Command}$")).ToArray();
+                        _cas = cas.Where(_ca => _ca.IsRegular && Regex.IsMatch(_cs[idx], $"^{_ca.Command}$", regexOptions)).ToArray();
                         if (_cas.Length == 1)
                         {
                             pca = _cas[0];
@@ -859,10 +911,11 @@ public sealed class CliCenter
         var lca = new List<CommandAttribute>();
         if (!command.Contains(' '))
         {
+            // 第一層指令
             if (string.IsNullOrEmpty(UseTag))
-                lca.AddRange(_Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && string.IsNullOrEmpty(_ca.Tag)));
+                lca.AddRange(_Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command, stringComparison) && string.IsNullOrEmpty(_ca.Tag)));
             else
-                lca.AddRange(_Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command) && _ca.Tag == UseTag));
+                lca.AddRange(_Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(command, stringComparison) && _ca.Tag == UseTag));
         }
         else
         {
@@ -893,9 +946,9 @@ public sealed class CliCenter
             bool __Append(CommandAttribute ca, out CommandAttribute[] cas)
             {
                 if (idx == _cs.Length - 1 && ignoreRegular)
-                    cas = GetChildCommands(ca, _cs[idx]).Where(_ca => !_ca.IsRegular).ToArray();
+                    cas = GetChildCommands(ca, _cs[idx], false).Where(_ca => !_ca.IsRegular).ToArray();
                 else
-                    cas = GetChildCommands(ca, _cs[idx]).ToArray();
+                    cas = GetChildCommands(ca, _cs[idx], false).ToArray();
                 return idx != _cs.Length - 1;
             }
         }
@@ -903,15 +956,19 @@ public sealed class CliCenter
     }
     #endregion
 
-
     #region Private Static Method : IEnumerable<CommandAttribute> GetChildCommands(CommandAttribute parent, string word)
     /// <summary>取得以特定的指令前置字串，找尋符合的子指令。</summary>
     /// <param name="parent">上層父指令。</param>
     /// <param name="word">子指令的前置字串。</param>
+    /// <param name="ignoreRegular">是否忽略正規表示式類型的指令類別。</param>
     /// <returns>符合的子指令清單。</returns>
-    private static IEnumerable<CommandAttribute> GetChildCommands(CommandAttribute parent, string word)
+    /// <remarks>此方法不尋找正規表示式的子指令。</remarks>
+    private IEnumerable<CommandAttribute> GetChildCommands(CommandAttribute parent, string word, bool ignoreRegular)
     {
-        return parent.Childs.Where(_ca => (!_ca.IsRegular && _ca.Command.StartsWith(word)) || (_ca.IsRegular && Regex.IsMatch(word, $"^{_ca.Command}$")));
+        if (ignoreRegular)
+            return parent.Childs.Where(_ca => !_ca.IsRegular && _ca.Command.StartsWith(word, stringComparison));
+        else
+            return parent.Childs.Where(_ca => (!_ca.IsRegular && _ca.Command.StartsWith(word, stringComparison)) || (_ca.IsRegular && Regex.IsMatch(word, $"^{_ca.Command}$", regexOptions)));
     }
     #endregion
 
