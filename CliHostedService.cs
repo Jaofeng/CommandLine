@@ -31,6 +31,8 @@ public sealed class CliOptions
     public bool DebugMode { get; set; } = false;
     /// <summary>開始輸入前延遲的時間，單位豪秒，預設為 1000 豪秒。</summary>
     public int Delay { get; set; } = 1000;
+    /// <summary>設定或取得是否忽略大小寫。預設為 false，即大小寫視為不同。</summary>
+    public bool IgnoreCase { get; set; } = false;
 }
 #endregion
 
