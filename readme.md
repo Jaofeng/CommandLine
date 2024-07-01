@@ -5,9 +5,11 @@
 
 
 ## 當前版本
-2024-06-28 - v1.34.795
-1. 修正無法過濾標籤(UseTag)的問題。
-2. 修正特定指令重複定義時會發生錯誤的問題。
+2024-07-01 - v1.35.810
+1. 新增 `CliCenter` 常數 `SBYTE_REGEX`、`BYTE_REGEX`。
+2. `CommandAttribute` 新增繼承 `ICloneable` 介面，並實做其介面函示。
+3. `CommandAttribute` 新增 `IsMath` 函示，用於檢查傳入的指令是否完全符合。
+4. 新增 `IgnoreCase` 選項屬性，用於設定查找指令時，是否忽略大小寫。預設為 `false`，即區分大小寫。
 
 ## 引用宣告
 本 `CJF.CommandLine` 部分原始碼來自 [Github](https://github.com/) [tonerdo/readline](https://github.com/tonerdo/readline/tree/master) 專案
@@ -47,6 +49,8 @@ public sealed class CliOptions
     public bool DebugMode { get; set; } = false;
     /// <summary>開始輸入前延遲的時間，單位豪秒，預設為 1000 豪秒。</summary>
     public int Delay { get; set; } = 1000;
+    /// <summary>設定或取得是否忽略大小寫。預設為 false，即大小寫視為不同。</summary>
+    public bool IgnoreCase { get; set; } = false;
 }
 ```
 
@@ -134,6 +138,10 @@ public const string DECIMAL_REGEX = @"-?[0-9]+(\.[0-9]+)?";
 public const string UINT16_REGEX = @"(\d{1,4}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])";
 /// <summary>INT16 數字檢查式。</summary>
 public const string INT16_REGEX = @"(-?(\d{0,4}|[0-2]\d{4}|31\d{3}|3276[0-7])|-32768)";
+/// <summary>UINT8 數字檢查式。</summary>
+public const string SBYTE_REGEX = @"(-?(\d{0,2}|1[0-1]\d|12[0-7])|-128)";
+/// <summary>BYTE 數字檢查式。</summary>
+public const string BYTE_REGEX = @"(\d{1,2}|1\d{2}|2[0-4]\d|25[0-5])";
 /// <summary>16 進位字串檢查式。</summary>
 public const string HEX_REGEX = @"[0-9a-fA-F]+";
 /// <summary>1 位元組的 16 進位字串檢查式。</summary>
@@ -216,7 +224,7 @@ partial class Program
 	}
 }
 ```
-為加快指令尋找、比對的正確性，請使用 `RebindLinkRelationship` 方法重新建立指令的連結關係。
+為加快指令尋找、比對的正確性，在使用 `Append` 新增指令後，請使用 `RebindLinkRelationship` 方法重新建立指令的連結關係。
 
 ``` C#
 // File Name : _CLI.cs
@@ -284,6 +292,10 @@ partial class Program
 
 ---
 ## 歷史版本紀錄
+2024-06-28 - v1.34.795
+1. 修正無法過濾標籤(UseTag)的問題。
+2. 修正特定指令重複定義時會發生錯誤的問題。
+
 2023-07-16 - v1.33.762
 1. 修正訊息輸出時，按上下鍵時會產生錯誤而中斷執行的問題。
 
@@ -294,7 +306,7 @@ partial class Program
 2023-07-06 - v1.33.740
 1. 優化內建的正規表示式規則
 2. 優化指令層級並加強指令彈性
-3. 增加 DebugMode 顯示訊息，並於程式執行後，以樹狀結構顯示指令與其對應之函示名
+3. 增加 `DebugMode` 顯示訊息，並於程式執行後，以樹狀結構顯示指令與其對應之函示名
 
 2023-06-27 - v1.32.725
 1. 新增除錯模式，於 `CliOptions` 中設定；設定後，會在指令執行前顯示完整指令以及執行的函示名稱。
