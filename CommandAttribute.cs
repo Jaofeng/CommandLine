@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Versioning;
+using System.Text.RegularExpressions;
 
 namespace CJF.CommandLine;
 
@@ -9,7 +10,7 @@ namespace CJF.CommandLine;
 /// <summary>CLI 指令類別</summary>
 [UnsupportedOSPlatform("browser")]
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false), DefaultProperty("Command")]
-public sealed class CommandAttribute : Attribute
+public sealed class CommandAttribute : Attribute, ICloneable
 {
     readonly List<CommandAttribute> _Childs;
 
@@ -79,7 +80,15 @@ public sealed class CommandAttribute : Attribute
     /// <returns>有效: <see langword="true"/>, 否則為 <see langword="false"/>。</returns>
     public bool IsValid() => !string.IsNullOrEmpty(Command) && !Command.Contains(' ') && (string.IsNullOrEmpty(Parent) || Parent is not null && !Parent.EndsWith(" "));
     #endregion
-   
+
+    #region Public Method : bool IsMatch(string command, bool ignoreCase)
+    /// <summary>檢查指令是否符合此 <see cref="CommandAttribute"/> 自訂屬性類別。</summary>
+    /// <param name="command">欲檢查的指令。</param>
+    /// <param name="ignoreCase">是否忽略大小寫。</param>
+    /// <returns>符合: <see langword="true"/>, 否則為 <see langword="false"/>。</returns>
+    public bool IsMatch(string command, bool ignoreCase) => Regex.IsMatch(command, string.IsNullOrEmpty(Parent) ? "" : $"{Parent} " + Command, ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None);
+    #endregion
+
 
     #region Public Override Method : bool Match(object? obj)
     /// <summary>判斷指定的物件是否等於目前的 <see cref="CommandAttribute"/>。</summary>
@@ -136,5 +145,29 @@ public sealed class CommandAttribute : Attribute
     /// <summary>判斷兩個 <see cref="CommandAttribute"/> 是否不相等。</summary>
     public static bool operator !=(CommandAttribute left, CommandAttribute right) => !left.Match(right);
     #endregion
+
+    #region Public Method : CommandAttribute Clone()
+    /// <summary>複製此 <see cref="CommandAttribute"/> 物件。</summary>
+    /// <returns>複製後的 <see cref="CommandAttribute"/> 物件。</returns>
+    /// <remarks>此方法會複製所有子指令。</remarks>
+    public CommandAttribute Clone()
+    {
+        var ca = new CommandAttribute(Command, HelpText, Parent)
+        {
+            RegularHelp = RegularHelp,
+            IsRegular = IsRegular,
+            Tag = Tag,
+            Required = Required,
+            Hidden = Hidden,
+            Method = Method,
+            Level = Level
+        };
+        foreach (CommandAttribute cmd in _Childs)
+            ca.AddChild(cmd.Clone());
+        return ca;
+    }
+    object ICloneable.Clone() => Clone();
+    #endregion
+
 }
 #endregion
