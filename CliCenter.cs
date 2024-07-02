@@ -417,23 +417,22 @@ public sealed class CliCenter
             if (string.IsNullOrWhiteSpace(s)) continue;
             if (string.IsNullOrEmpty(res))
             {
-                var _cas = _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(s, stringComparison));
+                var _cas = _Commands.Where(_ca => string.IsNullOrEmpty(_ca.Parent) && _ca.Command.StartsWith(s, stringComparison) && (string.IsNullOrEmpty(UseTag) && string.IsNullOrEmpty(_ca.Tag) || !string.IsNullOrEmpty(UseTag) && UseTag.Equals(_ca.Tag)));
                 if (!_cas.Any()) return null;
-                cmd = _cas.First();
-                res = cmd.Command;
+                if (_cas.Count() == 1)
+                {
+                    cmd = _cas.First();
+                    res = cmd.Command;
+                }
+                else
+                    return null;
             }
             else
             {
-                #region Predicate Method : bool _FindChild(CommandAttribute ca)
-                bool _FindChild(CommandAttribute ca)
+                var _cc = cmd!.Childs.Where(_FindChild);
+                if (_cc.Count() == 1)
                 {
-                    if (string.IsNullOrEmpty(ca.Parent)) return false;
-                    return ca.IsRegular && Regex.IsMatch(s, $"^{ca.Command}$", regexOptions) || !ca.IsRegular && ca.Command.StartsWith(s, stringComparison);
-                }
-                #endregion
-
-                if (cmd!.Childs.FirstOrDefault(_FindChild) is CommandAttribute _ca)
-                {
+                    CommandAttribute _ca = _cc.First();
                     if (_ca.IsRegular)
                         res += " " + s;
                     else
@@ -442,11 +441,18 @@ public sealed class CliCenter
                 }
                 else
                     break;
-
             }
+
+            #region Predicate Method : bool _FindChild(CommandAttribute ca)
+            bool _FindChild(CommandAttribute ca)
+            {
+                if (string.IsNullOrEmpty(ca.Parent)) return false;
+                return ca.IsRegular && Regex.IsMatch(s, $"^{ca.Command}$", regexOptions) || !ca.IsRegular && ca.Command.StartsWith(s, stringComparison);
+            }
+            #endregion
+
         }
         return res;
-
     }
     #endregion
 

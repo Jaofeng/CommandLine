@@ -5,11 +5,12 @@
 
 
 ## 當前版本
-2024-07-01 - v1.35.810
+2024-07-02 - v1.35.810
 1. 新增 `CliCenter` 常數 `SBYTE_REGEX`、`BYTE_REGEX`。
 2. `CommandAttribute` 新增繼承 `ICloneable` 介面，並實做其介面函示。
 3. `CommandAttribute` 新增 `IsMath` 函示，用於檢查傳入的指令是否完全符合。
 4. 新增 `IgnoreCase` 選項屬性，用於設定查找指令時，是否忽略大小寫。預設為 `false`，即區分大小寫。
+5. 加強判斷兩個以上相同字首的指令避免誤判。
 
 ## 引用宣告
 本 `CJF.CommandLine` 部分原始碼來自 [Github](https://github.com/) [tonerdo/readline](https://github.com/tonerdo/readline/tree/master) 專案
