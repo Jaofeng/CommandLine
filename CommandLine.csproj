@@ -5,15 +5,15 @@
 		<Nullable>enable</Nullable>
 		<RootNamespace>CJF.CommandLine</RootNamespace>
 		<Configurations>MinRelease;Debug;Release</Configurations>
-		<AssemblyVersion>1.35.810</AssemblyVersion>
-		<FileVersion>1.35.810</FileVersion>
+		<AssemblyVersion>1.36.825</AssemblyVersion>
+		<FileVersion>1.36.825</FileVersion>
 		<Title>Command Line Interface for Console Hosting Application</Title>
 		<Copyright>Copyright(c) 2023 Chen Jaofeng all right reserved.</Copyright>
 		<PackageTags>CLI;Command Line;Console</PackageTags>
 		<EnforceCodeStyleInBuild>False</EnforceCodeStyleInBuild>
 		<EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
 		<PackageId>CJF.CommandLine</PackageId>
-		<Version>1.35.810</Version>
+		<Version>1.36.825</Version>
 		<Company>Chen Jaofeng</Company>
 		<Authors>Chen Jaofeng</Authors>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
