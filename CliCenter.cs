@@ -343,16 +343,52 @@ public sealed class CliCenter
     }
     #endregion
 
-    #region Public Method : bool RemoveCommand(string command)
+    #region Public Method : bool RemoveCommand(CommandAttribute cmd)
     /// <summary>移除指令。</summary>
-    /// <param name="command">CLI 指令，可使用縮寫指令。</param>
+    /// <param name="cmd">指令類別。</param>
     /// <returns>如成功刪除指令，將回傳 <see langword="true"/>, 否則為 <see langword="false"/>。</returns>
-    public bool RemoveCommand(string command)
+    public bool RemoveCommand(CommandAttribute cmd)
     {
-        if (GetCommand(command) is not CommandAttribute cmd)
+        if (cmd is null)
             return false;
         else
             return _Commands.Remove(cmd);
+    }
+    #endregion
+
+    #region Public Method : bool RemoveCommand(string command, string tag)
+    /// <summary>移除指令。</summary>
+    /// <param name="command">CLI 完整指令。</param>
+    /// <param name="tag">分類標籤。</param>
+    /// <returns>如成功刪除指令，將回傳 <see langword="true"/>, 否則為 <see langword="false"/>。</returns>
+    public bool RemoveCommand(string command, string? tag = null)
+    {
+        if (FindCommand(command, tag) is not CommandAttribute cmd)
+            return false;
+        else
+            return _Commands.Remove(cmd);
+    }
+    #endregion
+
+    #region Public Method : CommandAttribute? FindCommand(string command, string? tag = null)
+    /// <summary>尋找特定指令的 <see cref="CommandAttribute"/> 類別。</summary>
+    /// <param name="command">CLI 完整指令。</param>
+    /// <param name="tag">分類標籤。</param>
+    /// <returns>如找到指令，將回傳 <see cref="CommandAttribute"/> 類別，否則為 <see langword="null"/>。</returns>
+    public CommandAttribute? FindCommand(string command, string? tag = null)
+    {
+        var cmds = _Commands.Where(_ca => _ca.FullCommand.Equals(command, stringComparison) && (string.IsNullOrEmpty(tag) && string.IsNullOrEmpty(_ca.Tag) || !string.IsNullOrEmpty(tag) && tag.Equals(_ca.Tag)));
+        if (cmds.Count() == 1)
+            return cmds.First();
+        else if (cmds.Count() > 1)
+        {
+            if (string.IsNullOrEmpty(tag))
+                return cmds.FirstOrDefault(_c => string.IsNullOrEmpty(_c.Tag));
+            else
+                return cmds.FirstOrDefault(_c => tag.Equals(_c.Tag));
+        }
+        else
+            return null;
     }
     #endregion
 
@@ -649,7 +685,7 @@ public sealed class CliCenter
                             Console.WriteLine($"\x1B[90m[DEBUG]\x1B[39m Ambiguous command: \"\x1B[96m{cmd}\x1B[39m\"");
                             foreach (CommandAttribute _ca in cas)
                             {
-                                StringBuilder sb = new StringBuilder(); 
+                                StringBuilder sb = new StringBuilder();
                                 CommandAttribute? _p = GetParentCommand(_ca);
                                 while (_p is not null)
                                 {
@@ -804,13 +840,11 @@ public sealed class CliCenter
     #endregion
 
     #region Private Method : void SetChilds(CommandAttribute cmd)
-    /// <summary>將指令綁定成子指令。</summary>
-    /// <param name="cmd">欲綁定的指令。</param>
+    /// <summary>尋找並設定指令的子指令。</summary>
+    /// <param name="cmd">欲歸屬的父指令。</param>
     private void SetChilds(CommandAttribute cmd)
     {
-        if (cmd.Command == "md5")
-            Console.Write("");
-        //cmd.ClearChilds();
+        cmd.ClearChilds();
         cmd.Level = (string.IsNullOrEmpty(cmd.Parent) ? 0 : SplitCommand(cmd.Parent).Length) + 1;
         string _pc = string.IsNullOrEmpty(cmd.Parent) ? cmd.Command : $"{cmd.Parent} {cmd.Command}";
         string[] fds = SplitCommand(cmd.FullCommand);
@@ -909,7 +943,7 @@ public sealed class CliCenter
 
     #region Private Method : IEnumerable<CommandAttribute> GetCommands(string command, bool ignoreRegular = false)
     /// <summary>找尋相似的指定清單。</summary>
-    /// <param name="command">指令前置字串。</param>
+    /// <param name="command">CLI 指令，可使用縮寫指令。</param>
     /// <param name="ignoreRegular">是否忽略正規表示式類型的指令類別。</param>
     /// <returns>找到的指令清單。</returns>
     private IEnumerable<CommandAttribute> GetCommands(string command, bool ignoreRegular = false)
