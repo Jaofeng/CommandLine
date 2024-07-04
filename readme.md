@@ -5,7 +5,7 @@
 
 
 ## 當前版本
-2024-07-02 - v1.36.825
+2024-07-04 - v1.36.825
 1. `CliCenter` 新增 `FindCommand` 函式。
 2. `CliCenter` 變更 `RemoveCommand` 介面。
 3. `CliCenter` 移除 `SetChilds` 函式內的測試代碼，並修正錯誤。
