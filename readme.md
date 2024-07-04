@@ -5,12 +5,10 @@
 
 
 ## 當前版本
-2024-07-02 - v1.35.810
-1. 新增 `CliCenter` 常數 `SBYTE_REGEX`、`BYTE_REGEX`。
-2. `CommandAttribute` 新增繼承 `ICloneable` 介面，並實做其介面函示。
-3. `CommandAttribute` 新增 `IsMath` 函示，用於檢查傳入的指令是否完全符合。
-4. 新增 `IgnoreCase` 選項屬性，用於設定查找指令時，是否忽略大小寫。預設為 `false`，即區分大小寫。
-5. 加強判斷兩個以上相同字首的指令避免誤判。
+2024-07-02 - v1.36.825
+1. `CliCenter` 新增 `FindCommand` 函式。
+2. `CliCenter` 變更 `RemoveCommand` 介面。
+3. `CliCenter` 移除 `SetChilds` 函式內的測試代碼，並修正錯誤。
 
 ## 引用宣告
 本 `CJF.CommandLine` 部分原始碼來自 [Github](https://github.com/) [tonerdo/readline](https://github.com/tonerdo/readline/tree/master) 專案
@@ -293,6 +291,13 @@ partial class Program
 
 ---
 ## 歷史版本紀錄
+2024-07-02 - v1.35.810
+1. 新增 `CliCenter` 常數 `SBYTE_REGEX`、`BYTE_REGEX`。
+2. `CommandAttribute` 新增繼承 `ICloneable` 介面，並實做其介面函示。
+3. `CommandAttribute` 新增 `IsMath` 函示，用於檢查傳入的指令是否完全符合。
+4. 新增 `IgnoreCase` 選項屬性，用於設定查找指令時，是否忽略大小寫。預設為 `false`，即區分大小寫。
+5. 加強判斷兩個以上相同字首的指令避免誤判。
+
 2024-06-28 - v1.34.795
 1. 修正無法過濾標籤(UseTag)的問題。
 2. 修正特定指令重複定義時會發生錯誤的問題。
