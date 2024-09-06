@@ -5,10 +5,8 @@
 
 
 ## 當前版本
-2024-07-04 - v1.36.825
-1. `CliCenter` 新增 `FindCommand` 函式。
-2. `CliCenter` 變更 `RemoveCommand` 介面。
-3. `CliCenter` 移除 `SetChilds` 函式內的測試代碼，並修正錯誤。
+2024-09-06 - v1.37.906
+1. 修正 `IP_REGEX` 正規表示式的錯誤。
 
 ## 引用宣告
 本 `CJF.CommandLine` 部分原始碼來自 [Github](https://github.com/) [tonerdo/readline](https://github.com/tonerdo/readline/tree/master) 專案
@@ -148,7 +146,7 @@ public const string HEX1BYTE_REGEX = @"[0-9a-fA-F]{2}";
 /// <summary>2 位元組的 16 進位字串檢查式。</summary>
 public const string HEX2BYTE_REGEX = @"[0-9a-fA-F]{4}";
 /// <summary>IP 位址檢查式。</summary>
-public const string IP_REGEX = @"((25[0-5]|2[0-4]\d|[01]?\d{1,2})(\.|\s?|$)){4}";
+public const string IP_REGEX = @"((25[0-5]|2[0-4]\d|[01]?\d{1,2})(\.?|$)){4}";
 /// <summary>通訊埠號檢查式。</summary>
 public const string PORT_REGEX = UINT16_REGEX;
 /// <summary>電話檢查式。</summary>
@@ -291,6 +289,11 @@ partial class Program
 
 ---
 ## 歷史版本紀錄
+2024-07-04 - v1.36.825
+1. `CliCenter` 新增 `FindCommand` 函式。
+2. `CliCenter` 變更 `RemoveCommand` 介面。
+3. `CliCenter` 移除 `SetChilds` 函式內的測試代碼，並修正錯誤。
+
 2024-07-02 - v1.35.810
 1. 新增 `CliCenter` 常數 `SBYTE_REGEX`、`BYTE_REGEX`。
 2. `CommandAttribute` 新增繼承 `ICloneable` 介面，並實做其介面函示。
