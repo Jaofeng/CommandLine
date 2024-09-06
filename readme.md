@@ -285,7 +285,7 @@ partial class Program
 ```
 
 ## 範例結果
-![範例結果](https://i.imgur.com/AbY81PB.png)
+<img src="https://i.imgur.com/AbY81PB.png" width="600" title="範例結果">
 
 ---
 ## 歷史版本紀錄
