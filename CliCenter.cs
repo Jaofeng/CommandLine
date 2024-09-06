@@ -36,7 +36,7 @@ public sealed class CliCenter
     /// <summary>2 位元組的 16 進位字串檢查式。</summary>
     public const string HEX2BYTE_REGEX = @"[0-9a-fA-F]{4}";
     /// <summary>IP 位址檢查式。</summary>
-    public const string IP_REGEX = @"((25[0-5]|2[0-4]\d|[01]?\d{1,2})(\.|\s?|$)){4}";
+    public const string IP_REGEX = @"((25[0-5]|2[0-4]\d|[01]?\d{1,2})(\.?|$)){4}";
     /// <summary>通訊埠號檢查式。</summary>
     public const string PORT_REGEX = UINT16_REGEX;
     /// <summary>電話檢查式。</summary>
